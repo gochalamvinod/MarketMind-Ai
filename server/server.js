@@ -124,14 +124,12 @@ const initPriceCheckerJob = () => {
   }
 };
 
-if (!process.env.VERCEL) {
-  initPriceCheckerJob();
-}
+initPriceCheckerJob();
 
-// Start Server for traditional Node environment
+// Start Server
+const PORT = process.env.PORT || 5000;
 let server = null;
-if (!process.env.VERCEL) {
-  const PORT = process.env.PORT || 5000;
+if (process.env.NODE_ENV !== 'test') {
   server = app.listen(PORT, () => {
     const demoStatus = isDemoMode()
       ? 'DEMO MODE (Simulated AGMARKNET prices)'
@@ -146,6 +144,7 @@ if (!process.env.VERCEL) {
     console.log('====================================================');
   });
 }
+
 
 module.exports = app;
 module.exports.app = app;
