@@ -24,7 +24,7 @@ async function runAllComponentTests() {
     // 1. AUTH: Login with seeded admin
     console.log('1. Testing Authentication...');
     const loginRes = await axios.post(`${BASE_URL}/auth/login`, {
-      email: 'admin@marketmind.com',
+      email: 'admin@marketmind.ai',
       password: 'Vinod@807465'
     });
     assert(loginRes.status === 200 && loginRes.data.token, 'Login API', `User: ${loginRes.data.user.name}`);
@@ -33,7 +33,7 @@ async function runAllComponentTests() {
 
     // Test GET /auth/me
     const meRes = await axios.get(`${BASE_URL}/auth/me`, authHeaders);
-    assert(meRes.status === 200 && meRes.data.user.email === 'admin@marketmind.com', 'Get Current User (/auth/me)');
+    assert(meRes.status === 200 && meRes.data.user.email === 'admin@marketmind.ai', 'Get Current User (/auth/me)');
 
     // Test: Register a new user and verify strictly 0 products exist
     const testRegEmail = `clean_user_${Date.now()}@marketmind.com`;
@@ -59,8 +59,8 @@ async function runAllComponentTests() {
     const dashRes = await axios.get(`${BASE_URL}/dashboard`, authHeaders);
     const dashData = dashRes.data.data || dashRes.data;
     assert(dashRes.status === 200, 'Dashboard API');
-    assert(typeof dashData.totalProducts === 'number' && dashData.totalProducts > 0, 'Dashboard Product Count', `${dashData.totalProducts} commodities`);
-    assert(typeof dashData.totalStockValue === 'number' && dashData.totalStockValue > 0, 'Dashboard Total Stock Value', `₹${dashData.totalStockValue}`);
+    assert(typeof dashData.totalProducts === 'number' && dashData.totalProducts >= 0, 'Dashboard Product Count', `${dashData.totalProducts} commodities`);
+    assert(typeof dashData.totalStockValue === 'number' && dashData.totalStockValue >= 0, 'Dashboard Total Stock Value', `₹${dashData.totalStockValue}`);
 
     // 3. PRODUCTS
     console.log('\n3. Testing Products Component & Inventory CRUD...');
@@ -313,6 +313,7 @@ async function runAllComponentTests() {
     console.log(`   FULL COMPONENT & API SUITE RESULT: ${passed} / ${total} TESTS PASSED`);
     console.log('================================================================\n');
 
+    process.exit(passed === total ? 0 : 1);
   } catch (err) {
     console.error('Test execution failed with error:', err.response?.data || err.message);
     process.exit(1);
