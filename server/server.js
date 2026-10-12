@@ -5,24 +5,8 @@ const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 const { isDemoMode } = require('./utils/helpers');
 
-// Helper to safely load route modules if they exist or provide graceful stub
-const loadRoute = (modulePath) => {
-  try {
-    return require(modulePath);
-  } catch (err) {
-    if (err.code === 'MODULE_NOT_FOUND' && err.message.includes(modulePath.replace('./', ''))) {
-      const router = express.Router();
-      router.all('*', (req, res) => {
-        res.status(501).json({
-          success: false,
-          message: `Endpoint ${req.originalUrl} handler (${modulePath}) is being configured.`
-        });
-      });
-      return router;
-    }
-    throw err;
-  }
-};
+// Server configuration
+
 
 const app = express();
 
@@ -82,19 +66,19 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Mount Routes
-app.use('/api/auth', loadRoute('./routes/auth'));
-app.use('/api/products', loadRoute('./routes/products'));
-app.use('/api/suppliers', loadRoute('./routes/suppliers'));
-app.use('/api/purchases', loadRoute('./routes/purchases'));
-app.use('/api/sales', loadRoute('./routes/sales'));
-app.use('/api/market-prices', loadRoute('./routes/marketPrices'));
-app.use('/api/alerts', loadRoute('./routes/alerts'));
-app.use('/api/dashboard', loadRoute('./routes/dashboard'));
-app.use('/api/reports', loadRoute('./routes/reports'));
-app.use('/api/ai', loadRoute('./routes/ai'));
-app.use('/api/chatbot', loadRoute('./routes/chatbot'));
-app.use('/api/settings', loadRoute('./routes/settings'));
+// Mount Routes directly for reliable Vercel bundling
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/products', require('./routes/products'));
+app.use('/api/suppliers', require('./routes/suppliers'));
+app.use('/api/purchases', require('./routes/purchases'));
+app.use('/api/sales', require('./routes/sales'));
+app.use('/api/market-prices', require('./routes/marketPrices'));
+app.use('/api/alerts', require('./routes/alerts'));
+app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/reports', require('./routes/reports'));
+app.use('/api/ai', require('./routes/ai'));
+app.use('/api/chatbot', require('./routes/chatbot'));
+app.use('/api/settings', require('./routes/settings'));
 
 // 404 Route Handler for unmatched routes
 app.use('*', (req, res) => {
