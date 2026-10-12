@@ -87,11 +87,11 @@ const Products = () => {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true)
-      const [prodRes, suppRes, setRes] = useState ? await Promise.all([
+      const [prodRes, suppRes, setRes] = await Promise.all([
         getProducts(),
         getSuppliers(),
         getSettings().catch(() => null)
-      ]) : []
+      ])
 
       const prodData = prodRes?.data?.data || prodRes?.data || []
       const suppData = suppRes?.data?.data || suppRes?.data || []

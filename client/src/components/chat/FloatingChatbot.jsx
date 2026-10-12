@@ -68,10 +68,10 @@ const FloatingChatbot = () => {
     {
       id: 'welcome-1',
       role: 'assistant',
-      content: "👋 **Hi there! I'm your MarketMind AI Copilot.**\nI can do any task for your business — set price alerts, record sales & purchases, check mandi rates, update prices, or track profits. Just tell me what you need!",
+      content: "👋 **Hey! I'm your MarketMind business partner.**\nI can run tasks directly in your store — set price alerts, record sales & purchases, check mandi rates, update prices, or review profits. What can I do for you today?",
       suggestions: [
-        "Add alert for Rice below 36",
         "Today's Profit & Sales",
+        "Add alert for Rice below 36",
         "Which products are low on stock?",
         "What is the market price of Rice?"
       ],

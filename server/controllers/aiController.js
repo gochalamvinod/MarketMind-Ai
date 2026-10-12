@@ -3,6 +3,37 @@ const Product = require('../models/Product');
 const MarketPrice = require('../models/MarketPrice');
 const Sale = require('../models/Sale');
 
+// In-memory response cache to ensure instantaneous navigation and zero component delays
+const aiCache = new Map();
+const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes cache per user/product
+
+const getCached = (key) => {
+  const item = aiCache.get(key);
+  if (!item) return null;
+  if (Date.now() - item.timestamp > CACHE_TTL_MS) {
+    aiCache.delete(key);
+    return null;
+  }
+  return item.data;
+};
+
+const setCached = (key, data) => {
+  aiCache.set(key, { data, timestamp: Date.now() });
+};
+
+/**
+ * Fast Gemini caller with timeout race.
+ * If Gemini takes > 5.5s, falls back cleanly to statistical engine so user request never hangs.
+ */
+const callGeminiWithTimeout = async (prompt, timeoutMs = 5500) => {
+  if (!isGeminiAvailable() || !model) return null;
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('AI Inference Timeout (Fast Failover)')), timeoutMs)
+  );
+  const geminiPromise = model.generateContent(prompt).then((res) => res.response.text());
+  return Promise.race([geminiPromise, timeoutPromise]);
+};
+
 /**
  * @desc    Get overall market intelligence insights
  * @route   GET /api/ai/insights
@@ -10,6 +41,12 @@ const Sale = require('../models/Sale');
  */
 const getInsights = async (req, res) => {
   try {
+    const cacheKey = `insights_${req.user.id}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return res.status(200).json(cached);
+    }
+
     const products = await Product.find({ userId: req.user.id, isActive: true });
     const recentPrices = await MarketPrice.find({ userId: req.user.id })
       .sort({ fetchTime: -1 })
@@ -44,40 +81,48 @@ const getInsights = async (req, res) => {
 
     if (isGeminiAvailable()) {
       try {
-        const prompt = `You are MarketMind AI, a commodity market intelligence advisor for an Indian grocery business in Hyderabad, Telangana.
-Analyze the following inventory and market price movements:
-Products tracked: ${products.map((p) => `${p.name} (Cost: Rs ${p.purchaseCost}/kg, Selling: Rs ${p.sellingPrice}/kg, Ref Price: Rs ${p.currentReferencePrice || 'N/A'}/kg)`).slice(0, 15).join('; ')}.
-Recent trends: ${risingProducts.length} rising, ${fallingProducts.length} falling.
+        const prompt = `You're a sharp commodity market advisor for a grocery shop owner in Hyderabad, Telangana. Talk like a trusted business friend — plain, direct, practical. Use ₹ not Rs.
 
-Provide:
-1. Concise executive summary of market conditions (2-3 sentences)
-2. Strategic advice for purchasing (which commodities to buy early before price rises)
-3. Pricing advice (which retail prices to protect margins on)
-Keep language plain, practical, and in INR (Rs). Keep response under 250 words.`;
+Their inventory:
+${products.map((p) => `${p.name}: Cost ₹${p.purchaseCost}/${p.unit}, Selling ₹${p.sellingPrice}/${p.unit}, Mandi Rate ₹${p.currentReferencePrice || 'N/A'}/${p.unit}`).slice(0, 15).join('\n')}
 
-        const result = await model.generateContent(prompt);
-        const aiText = result.response.text();
+Market movement: ${risingProducts.length} commodities rising, ${fallingProducts.length} falling, ${stableProducts.length} stable.
+Rising: ${risingProducts.map(p => `${p.name} (${p.change})`).slice(0, 5).join(', ') || 'none'}
+Falling: ${fallingProducts.map(p => `${p.name} (${p.change})`).slice(0, 5).join(', ') || 'none'}
 
-        return res.status(200).json({
-          success: true,
-          source: 'AI',
-          model: 'Gemini 3.5 Flash',
-          insights: aiText,
-          stats: ruleBasedSummary
-        });
+Give a brief, actionable market briefing:
+1. What's happening in 2-3 sentences (plain language, not corporate-speak)
+2. What to buy NOW before prices climb higher
+3. Which selling prices to bump up to protect margins
+Keep it under 200 words. Be opinionated and practical — this is a real shopkeeper who needs real advice, not a report.`;
+
+        const aiText = await callGeminiWithTimeout(prompt);
+        if (aiText) {
+          const payload = {
+            success: true,
+            source: 'AI',
+            model: 'Gemini 3.5 Flash',
+            insights: aiText,
+            stats: ruleBasedSummary
+          };
+          setCached(cacheKey, payload);
+          return res.status(200).json(payload);
+        }
       } catch (geminiError) {
         console.warn('[Gemini AI] Call failed, fallback to rule-based:', geminiError.message);
       }
     }
 
     // Fallback to deterministic rule-based output
-    return res.status(200).json({
+    const fallbackPayload = {
       success: true,
       source: 'RULE_BASED',
       model: 'Deterministic Rule Engine',
       insights: ruleBasedSummary.actionableAdvice,
       stats: ruleBasedSummary
-    });
+    };
+    setCached(cacheKey, fallbackPayload);
+    return res.status(200).json(fallbackPayload);
   } catch (error) {
     console.error('Error generating AI insights:', error);
     return res.status(500).json({
@@ -96,8 +141,13 @@ Keep language plain, practical, and in INR (Rs). Keep response under 250 words.`
 const getProductAnalysis = async (req, res) => {
   try {
     const { productId } = req.params;
-    const product = await Product.findOne({ _id: productId, userId: req.user.id });
+    const cacheKey = `analysis_${productId}_${req.user.id}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return res.status(200).json(cached);
+    }
 
+    const product = await Product.findOne({ _id: productId, userId: req.user.id });
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
@@ -131,14 +181,14 @@ Provide 3 concise bullet points:
 - Cost vs market comparison
 - Practical recommendation for the shop owner.`;
 
-        const result = await model.generateContent(prompt);
-        explanation = result.response.text();
+        const aiText = await callGeminiWithTimeout(prompt);
+        if (aiText) explanation = aiText;
       } catch (geminiError) {
         console.warn('[Gemini AI] Product analysis fallback:', geminiError.message);
       }
     }
 
-    return res.status(200).json({
+    const payload = {
       success: true,
       source: isGeminiAvailable() ? 'AI' : 'RULE_BASED',
       data: {
@@ -162,7 +212,9 @@ Provide 3 concise bullet points:
         analysis: explanation,
         history: priceHistory
       }
-    });
+    };
+    setCached(cacheKey, payload);
+    return res.status(200).json(payload);
   } catch (error) {
     console.error('Error analyzing product:', error);
     return res.status(500).json({
@@ -181,8 +233,13 @@ Provide 3 concise bullet points:
 const getForecast = async (req, res) => {
   try {
     const { productId } = req.params;
-    const product = await Product.findOne({ _id: productId, userId: req.user.id });
+    const cacheKey = `forecast_${productId}_${req.user.id}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return res.status(200).json(cached);
+    }
 
+    const product = await Product.findOne({ _id: productId, userId: req.user.id });
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
@@ -213,14 +270,14 @@ const getForecast = async (req, res) => {
     if (isGeminiAvailable() && priceHistory.length >= 1) {
       try {
         const prompt = `Give a short 2-sentence estimated price outlook for ${product.name} in Telangana wholesale markets. Current reference: Rs ${currentPrice}/${product.unit}. Expected directional movement: ${trendDirection} (${expectedPercentageChange}%). Remind the merchant that this is an estimate.`;
-        const result = await model.generateContent(prompt);
-        forecastExplanation = result.response.text();
+        const aiText = await callGeminiWithTimeout(prompt);
+        if (aiText) forecastExplanation = aiText;
       } catch (err) {
         console.warn('[Gemini AI] Forecast error:', err.message);
       }
     }
 
-    return res.status(200).json({
+    const payload = {
       success: true,
       source: isGeminiAvailable() ? 'AI_ESTIMATE' : 'STATISTICAL_ESTIMATE',
       disclaimer: 'DISCLAIMER: This is an automated estimate based on historical trends, not a guaranteed price prediction.',
@@ -233,7 +290,9 @@ const getForecast = async (req, res) => {
         horizon: '7-14 Days',
         explanation: forecastExplanation
       }
-    });
+    };
+    setCached(cacheKey, payload);
+    return res.status(200).json(payload);
   } catch (error) {
     console.error('Error generating forecast:', error);
     return res.status(500).json({
@@ -245,63 +304,62 @@ const getForecast = async (req, res) => {
 };
 
 /**
- * @desc    Get actionable recommendations for buying and pricing
+ * @desc    Get purchasing & retail price recommendations
  * @route   GET /api/ai/recommendations
  * @access  Private
  */
 const getRecommendations = async (req, res) => {
   try {
     const products = await Product.find({ userId: req.user.id, isActive: true });
-
     const buyOpportunities = [];
-    const repriceRecommendations = [];
+    const priceAdjustmentSuggestions = [];
 
     products.forEach((p) => {
-      if (p.currentReferencePrice) {
-        // If market price is rising above purchase cost, suggest reviewing selling price
-        if (p.currentReferencePrice > p.purchaseCost * 1.1) {
-          const suggestedSelling = (p.currentReferencePrice / 0.9).toFixed(2); // 10% target margin
-          repriceRecommendations.push({
-            productId: p._id,
-            name: p.name,
-            currentCost: p.purchaseCost,
-            marketPrice: p.currentReferencePrice,
-            currentSellingPrice: p.sellingPrice,
-            suggestedPrice: suggestedSelling,
-            reason: `Market reference (₹${p.currentReferencePrice}) exceeds your purchase cost by >10%. Review selling price to protect future replenishment margin.`
-          });
-        }
+      const refPrice = p.currentReferencePrice;
+      const prevRef = p.previousReferencePrice;
 
-        // If market price dipped below previous reference, buying opportunity
-        if (p.previousReferencePrice && p.currentReferencePrice < p.previousReferencePrice) {
-          const dropPercent = (((p.previousReferencePrice - p.currentReferencePrice) / p.previousReferencePrice) * 100).toFixed(1);
-          buyOpportunities.push({
-            productId: p._id,
-            name: p.name,
-            currentCost: p.purchaseCost,
-            marketPrice: p.currentReferencePrice,
-            dropPercent: `${dropPercent}%`,
-            stockQuantity: p.stockQuantity,
-            reason: `Wholesale market dropped by ${dropPercent}% (now ₹${p.currentReferencePrice}/${p.unit}). Favorable entry point for stock restocking.`
-          });
-        }
+      if (refPrice && refPrice < p.purchaseCost * 0.95) {
+        buyOpportunities.push({
+          product: p.name,
+          productId: p._id,
+          unit: p.unit,
+          currentCost: p.purchaseCost,
+          mandiRate: refPrice,
+          potentialSavingsPercent: (((p.purchaseCost - refPrice) / p.purchaseCost) * 100).toFixed(1),
+          advice: `Mandi benchmark rate (₹${refPrice}/${p.unit}) is below your current inventory cost (₹${p.purchaseCost}/${p.unit}). Good restocking window to average down.`
+        });
+      }
+
+      const grossMargin = p.sellingPrice > 0 ? ((p.sellingPrice - p.purchaseCost) / p.sellingPrice) * 100 : 0;
+      if (grossMargin < 8 && p.purchaseCost > 0) {
+        const suggestedSelling = Math.ceil(p.purchaseCost * 1.15);
+        priceAdjustmentSuggestions.push({
+          product: p.name,
+          productId: p._id,
+          unit: p.unit,
+          currentSelling: p.sellingPrice,
+          purchaseCost: p.purchaseCost,
+          currentMargin: grossMargin.toFixed(1) + '%',
+          suggestedSelling,
+          targetMargin: '15%',
+          advice: `Current profit margin is thin (${grossMargin.toFixed(1)}%). Consider increasing retail price to ₹${suggestedSelling}/${p.unit} for a healthy 15% margin.`
+        });
       }
     });
 
     return res.status(200).json({
       success: true,
-      source: 'CALCULATED_RECOMMENDATIONS',
-      notice: 'Recommendations require business owner review and approval before action.',
       data: {
-        buyOpportunities: buyOpportunities.slice(0, 6),
-        repriceRecommendations: repriceRecommendations.slice(0, 6)
+        buyOpportunities,
+        priceAdjustmentSuggestions,
+        generatedAt: new Date().toISOString()
       }
     });
   } catch (error) {
     console.error('Error generating recommendations:', error);
     return res.status(500).json({
       success: false,
-      message: 'Server error generating recommendations',
+      message: 'Failed to generate recommendations',
       error: error.message
     });
   }

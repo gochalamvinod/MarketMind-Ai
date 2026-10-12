@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
+import { Outlet } from 'react-router-dom'
 import Navbar from './Navbar'
 import Sidebar from './Sidebar'
 import FloatingChatbot from '../chat/FloatingChatbot'
 
 /**
  * Layout wrapper for authenticated pages
- * @param {{ children: React.ReactNode }} props
+ * @param {{ children?: React.ReactNode }} props
  */
 const Layout = ({ children }) => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -32,7 +33,7 @@ const Layout = ({ children }) => {
 
         <main className="content-area flex-grow-1 p-3 p-md-4">
           <div className="container-fluid px-0">
-            {children}
+            {children || <Outlet />}
           </div>
         </main>
       </div>

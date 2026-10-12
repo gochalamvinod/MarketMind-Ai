@@ -109,11 +109,12 @@ const Chatbot = ({ isEmbedded = false }) => {
     {
       id: 'welcome-page-1',
       role: 'assistant',
-      content: "👋 **Hello! How can I help you today?**\nAsk about mandi rates, stock levels, or enter a command to record transactions.",
+      content: "👋 **Hey! I'm your MarketMind business partner.**\nI'm connected directly to your store inventory and live Telangana APMC mandis. What can I help you take care of today? I can record sales, check mandi prices, set alerts, update product rates, or review your profits!",
       suggestions: [
         "Today's Profit & Sales",
         "Which products are low on stock?",
-        "What is the market price of Rice?"
+        "What is the market price of Rice?",
+        "Set an alert for Rice below 36"
       ],
       timestamp: new Date()
     }

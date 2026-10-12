@@ -8,42 +8,58 @@ const Alert = require('../models/Alert');
 const priceMonitor = require('../services/priceMonitor');
 const helpers = require('../utils/helpers');
 
-// Gemini JSON Model Client
+// ── Gemini AI Conversational Engine ───────────────────────────────
 const apiKey = process.env.GEMINI_API_KEY;
 let genAI = null;
-let jsonModel = null;
+let chatModel = null;
+let fallbackModel = null;
 
 if (apiKey && apiKey.trim() !== '') {
   try {
     genAI = new GoogleGenerativeAI(apiKey.trim());
-    jsonModel = genAI.getGenerativeModel({
+    chatModel = genAI.getGenerativeModel({
       model: 'gemini-3.5-flash-lite',
-      generationConfig: { responseMimeType: 'application/json' }
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.9,
+        topP: 0.95,
+        maxOutputTokens: 1024
+      }
     });
+    fallbackModel = genAI.getGenerativeModel({
+      model: 'gemini-3.8-flash',
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.9,
+        topP: 0.95,
+        maxOutputTokens: 1024
+      }
+    });
+    console.log('[MarketMind Chatbot] Gemini conversational engine ready');
   } catch (err) {
-    console.warn('[Gemini AI] JSON model init warning:', err.message);
+    console.warn('[MarketMind Chatbot] Gemini init failed:', err.message);
   }
 }
 
 /**
- * Fuzzy finder for product by name or keyword
+ * Fuzzy product finder by name/keyword
  */
 const findProductByName = (products, text) => {
   if (!text) return null;
   const lower = text.toLowerCase().trim();
 
-  // 1. Exact match
-  let found = products.find((p) => p.name.toLowerCase() === lower);
+  // Exact match
+  let found = products.find(p => p.name.toLowerCase() === lower);
   if (found) return found;
 
-  // 2. Name contains text or text contains name
-  found = products.find((p) => lower.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(lower));
+  // Partial match
+  found = products.find(p => lower.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(lower));
   if (found) return found;
 
-  // 3. Keyword matching (e.g. "sona masoori", "basmati", "lokwan")
-  const words = lower.split(/\s+/).filter((w) => w.length > 2);
+  // Keyword match
+  const words = lower.split(/\s+/).filter(w => w.length > 2);
   for (const word of words) {
-    found = products.find((p) => p.name.toLowerCase().includes(word));
+    found = products.find(p => p.name.toLowerCase().includes(word));
     if (found) return found;
   }
 
@@ -51,48 +67,44 @@ const findProductByName = (products, text) => {
 };
 
 /**
- * Execute real database actions autonomously on behalf of the user
+ * Execute real database actions on behalf of the user
  */
 const executeStoreAction = async (userId, actionType, params = {}, products, suppliers) => {
   const normAction = (actionType || 'NONE').toUpperCase().trim();
 
-  // 1. CREATE ALERT
+  // ── CREATE ALERT ──
   if (normAction === 'CREATE_ALERT' || normAction === 'ADD_ALERT') {
     const commodityQuery = params.commodity || '';
     const matched = findProductByName(products, commodityQuery) || (products.length > 0 ? products[0] : null);
     if (!matched) {
-      return {
-        executed: false,
-        message: 'Could not find commodity to create alert for.'
-      };
+      return { executed: false, message: 'Could not find that commodity in your inventory.' };
     }
 
     const curRef = matched.currentReferencePrice || matched.purchaseCost || 40;
     const cond = params.condition || (params.targetValue && params.targetValue > curRef ? 'PRICE_INCREASE' : 'PRICE_DECREASE');
     let targetVal = parseFloat(params.targetValue);
-
     if (isNaN(targetVal) || targetVal <= 0) {
       targetVal = cond === 'PRICE_INCREASE'
         ? parseFloat((curRef * 1.05).toFixed(2))
         : parseFloat((curRef * 0.95).toFixed(2));
     }
 
+    let alertType = 'PRICE_DECREASE';
     let title = '';
     let message = '';
-    let alertType = 'PRICE_DECREASE';
 
     if (cond === 'PRICE_INCREASE' || cond === 'ABOVE') {
       alertType = 'PRICE_INCREASE';
       title = `📈 Wholesale Rate Surge: ${matched.name}`;
-      message = `Alert configured via Copilot: Notify when wholesale mandi rate for ${matched.name} rises above ₹${targetVal}/${matched.unit} to safeguard gross margins.`;
+      message = `Copilot alert: Notify when APMC mandi rate for ${matched.name} rises above ₹${targetVal}/${matched.unit}.`;
     } else if (cond === 'LOW_STOCK') {
       alertType = 'LOW_STOCK';
       title = `⚠️ Stock Reorder Alert: ${matched.name}`;
-      message = `Alert configured via Copilot: Notify when inventory for ${matched.name} drops to ${targetVal} ${matched.unit}.`;
+      message = `Copilot alert: Notify when inventory for ${matched.name} drops to ${targetVal} ${matched.unit}.`;
     } else {
       alertType = 'PRICE_DECREASE';
       title = `📉 Mandi Restock Opportunity: ${matched.name}`;
-      message = `Alert configured via Copilot: Notify when wholesale APMC rate for ${matched.name} drops below ₹${targetVal}/${matched.unit} for bulk procurement.`;
+      message = `Copilot alert: Notify when APMC rate for ${matched.name} drops below ₹${targetVal}/${matched.unit}.`;
     }
 
     const newAlert = await Alert.create({
@@ -110,33 +122,20 @@ const executeStoreAction = async (userId, actionType, params = {}, products, sup
     });
 
     return {
-      executed: true,
-      type: 'CREATE_ALERT',
-      data: newAlert,
-      productName: matched.name,
-      targetValue: targetVal,
-      unit: matched.unit
+      executed: true, type: 'CREATE_ALERT', data: newAlert,
+      productName: matched.name, targetValue: targetVal, unit: matched.unit
     };
   }
 
-  // 2. RECORD SALE
+  // ── RECORD SALE ──
   if (normAction === 'RECORD_SALE') {
-    const commodityQuery = params.commodity || '';
-    const matched = findProductByName(products, commodityQuery);
+    const matched = findProductByName(products, params.commodity || '');
     const qty = parseFloat(params.quantity);
 
-    if (!matched) {
-      return { executed: false, message: `Commodity "${commodityQuery}" not found in inventory.` };
-    }
-    if (isNaN(qty) || qty <= 0) {
-      return { executed: false, message: 'Please specify a valid quantity to sell.' };
-    }
+    if (!matched) return { executed: false, message: `Couldn't find "${params.commodity}" in your inventory.` };
+    if (isNaN(qty) || qty <= 0) return { executed: false, message: 'Please tell me how much quantity to sell.' };
     if (matched.stockQuantity < qty) {
-      return {
-        executed: false,
-        type: 'RECORD_SALE_FAILED',
-        message: `Insufficient stock: You requested to sell ${qty} ${matched.unit} of ${matched.name}, but only ${matched.stockQuantity} ${matched.unit} is available.`
-      };
+      return { executed: false, message: `Not enough stock! You only have ${matched.stockQuantity} ${matched.unit} of ${matched.name}, but you asked to sell ${qty}.` };
     }
 
     const unitSellingPrice = params.unitPrice && params.unitPrice > 0 ? parseFloat(params.unitPrice) : matched.sellingPrice;
@@ -146,61 +145,42 @@ const executeStoreAction = async (userId, actionType, params = {}, products, sup
     const profitMargin = totalRevenue > 0 ? parseFloat(((grossProfit / totalRevenue) * 100).toFixed(2)) : 0;
 
     const newSale = await Sale.create({
-      userId,
-      product: matched._id,
-      quantity: qty,
-      unit: matched.unit || 'kg',
-      unitSellingPrice,
-      totalRevenue,
-      costOfGoodsSold,
-      grossProfit,
-      profitMargin,
+      userId, product: matched._id, quantity: qty,
+      unit: matched.unit || 'kg', unitSellingPrice, totalRevenue,
+      costOfGoodsSold, grossProfit, profitMargin,
       saleDate: new Date(),
       customerRef: params.customer || 'Counter Customer',
       invoiceNumber: `INV-AI-${Date.now().toString().slice(-6)}`
     });
 
-    // Decrement stock
     matched.stockQuantity = parseFloat((matched.stockQuantity - qty).toFixed(2));
     await matched.save();
 
-    // Check low stock trigger
     if (matched.stockQuantity <= matched.minStockLevel) {
       await Alert.create({
-        userId,
-        product: matched._id,
-        type: 'LOW_STOCK',
+        userId, product: matched._id, type: 'LOW_STOCK',
         title: `⚠️ Low Stock: ${matched.name}`,
-        message: `${matched.name} is running low on stock (${matched.stockQuantity} ${matched.unit} remaining). Safety threshold is ${matched.minStockLevel} ${matched.unit}.`,
-        sellingPrice: matched.sellingPrice,
-        purchaseCost: matched.purchaseCost,
-        source: 'INVENTORY_SCAN',
-        market: 'Store Ledger'
+        message: `${matched.name} is down to ${matched.stockQuantity} ${matched.unit} (safety level: ${matched.minStockLevel} ${matched.unit}).`,
+        sellingPrice: matched.sellingPrice, purchaseCost: matched.purchaseCost,
+        source: 'INVENTORY_SCAN', market: 'Store Ledger'
       });
     }
 
     return {
-      executed: true,
-      type: 'RECORD_SALE',
-      data: newSale,
-      productName: matched.name,
-      quantity: qty,
-      unit: matched.unit,
-      revenue: totalRevenue,
-      profit: grossProfit,
-      remainingStock: matched.stockQuantity
+      executed: true, type: 'RECORD_SALE', data: newSale,
+      productName: matched.name, quantity: qty, unit: matched.unit,
+      revenue: totalRevenue, profit: grossProfit, remainingStock: matched.stockQuantity
     };
   }
 
-  // 3. RECORD PURCHASE (RESTOCK)
+  // ── RECORD PURCHASE ──
   if (normAction === 'RECORD_PURCHASE' || normAction === 'RESTOCK') {
-    const commodityQuery = params.commodity || '';
-    const matched = findProductByName(products, commodityQuery);
+    const matched = findProductByName(products, params.commodity || '');
     const qty = parseFloat(params.quantity);
     const unitCost = parseFloat(params.unitCost);
 
     if (!matched || isNaN(qty) || qty <= 0 || isNaN(unitCost) || unitCost <= 0) {
-      return { executed: false, message: 'Invalid purchase parameters.' };
+      return { executed: false, message: 'I need a valid product name, quantity, and unit cost to record a purchase.' };
     }
 
     const existingQty = matched.stockQuantity || 0;
@@ -211,13 +191,8 @@ const executeStoreAction = async (userId, actionType, params = {}, products, sup
     const supplierId = matched.supplier || (suppliers.length > 0 ? suppliers[0]._id : null);
 
     const newPurchase = await Purchase.create({
-      userId,
-      product: matched._id,
-      supplier: supplierId,
-      quantity: qty,
-      unit: matched.unit || 'kg',
-      unitCost,
-      totalAmount,
+      userId, product: matched._id, supplier: supplierId,
+      quantity: qty, unit: matched.unit || 'kg', unitCost, totalAmount,
       purchaseDate: new Date(),
       invoiceNumber: `PUR-AI-${Date.now().toString().slice(-6)}`
     });
@@ -227,25 +202,19 @@ const executeStoreAction = async (userId, actionType, params = {}, products, sup
     await matched.save();
 
     return {
-      executed: true,
-      type: 'RECORD_PURCHASE',
-      data: newPurchase,
-      productName: matched.name,
-      quantity: qty,
-      unit: matched.unit,
-      newCost,
-      newStock: newQty
+      executed: true, type: 'RECORD_PURCHASE', data: newPurchase,
+      productName: matched.name, quantity: qty, unit: matched.unit,
+      newCost, newStock: newQty
     };
   }
 
-  // 4. UPDATE SELLING PRICE
+  // ── UPDATE SELLING PRICE ──
   if (normAction === 'UPDATE_PRICE' || normAction === 'UPDATE_SELLING_PRICE') {
-    const commodityQuery = params.commodity || '';
-    const matched = findProductByName(products, commodityQuery);
+    const matched = findProductByName(products, params.commodity || '');
     const newPrice = parseFloat(params.newPrice);
 
     if (!matched || isNaN(newPrice) || newPrice <= 0) {
-      return { executed: false, message: 'Invalid price update details.' };
+      return { executed: false, message: 'Need a valid product and price to update.' };
     }
 
     const oldPrice = matched.sellingPrice;
@@ -253,19 +222,15 @@ const executeStoreAction = async (userId, actionType, params = {}, products, sup
     await matched.save();
 
     return {
-      executed: true,
-      type: 'UPDATE_PRICE',
-      productName: matched.name,
-      oldPrice,
-      newPrice,
-      unit: matched.unit
+      executed: true, type: 'UPDATE_PRICE',
+      productName: matched.name, oldPrice, newPrice, unit: matched.unit
     };
   }
 
-  // 5. ADD NEW COMMODITY / PRODUCT
+  // ── ADD NEW PRODUCT ──
   if (normAction === 'ADD_PRODUCT') {
     const name = params.name ? params.name.trim() : '';
-    if (!name) return { executed: false, message: 'Product name is required.' };
+    if (!name) return { executed: false, message: 'I need a product name to add it.' };
 
     const cost = parseFloat(params.cost || 30);
     const sellingPrice = parseFloat(params.sellingPrice || Math.round(cost * 1.2));
@@ -273,209 +238,170 @@ const executeStoreAction = async (userId, actionType, params = {}, products, sup
     const unit = params.unit || 'kg';
 
     const newProd = await Product.create({
-      userId,
-      name,
+      userId, name,
       category: params.category || 'Others',
-      unit,
-      purchaseCost: cost,
-      sellingPrice,
-      stockQuantity: stock,
-      minStockLevel: 20,
-      govApiCommodityName: name,
-      currentReferencePrice: cost,
-      priceSource: 'AGMARKNET'
+      unit, purchaseCost: cost, sellingPrice, stockQuantity: stock,
+      minStockLevel: 20, govApiCommodityName: name,
+      currentReferencePrice: cost, priceSource: 'AGMARKNET'
     });
 
-    return {
-      executed: true,
-      type: 'ADD_PRODUCT',
-      data: newProd,
-      productName: newProd.name
-    };
+    return { executed: true, type: 'ADD_PRODUCT', data: newProd, productName: newProd.name };
   }
 
-  // 6. SYNC LIVE MANDI RATES
+  // ── FETCH LIVE MANDI PRICES ──
   if (normAction === 'FETCH_MANDI' || normAction === 'FETCH_PRICES' || normAction === 'SYNC_PRICES') {
     const checkResult = await priceMonitor.checkPricesForUser(userId);
-    return {
-      executed: true,
-      type: 'FETCH_PRICES',
-      data: checkResult
-    };
+    return { executed: true, type: 'FETCH_PRICES', data: checkResult };
   }
 
-  // 7. SCAN & GENERATE SMART ALERTS
+  // ── SCAN & GENERATE ALERTS ──
   if (normAction === 'SCAN_ALERTS') {
     const createdAlerts = [];
     for (const prod of products) {
       const curRef = prod.currentReferencePrice;
       const prevRef = prod.previousReferencePrice;
-      const cost = prod.purchaseCost;
       const stock = prod.stockQuantity;
       const minStock = prod.minStockLevel || 10;
 
       if (curRef && prevRef && curRef < prevRef) {
         const dropPct = parseFloat((((prevRef - curRef) / prevRef) * 100).toFixed(1));
         createdAlerts.push(await Alert.create({
-          userId,
-          product: prod._id,
-          type: 'PRICE_DECREASE',
+          userId, product: prod._id, type: 'PRICE_DECREASE',
           title: `📉 Mandi Price Drop: ${prod.name}`,
-          message: `Wholesale APMC rate for ${prod.name} dropped ${dropPct}% to ₹${curRef}/${prod.unit}. Prime opportunity to restock batches.`,
-          currentPrice: curRef,
-          previousPrice: prevRef,
-          percentageChange: -dropPct,
-          purchaseCost: cost,
-          sellingPrice: prod.sellingPrice,
-          source: prod.priceSource || 'AGMARKNET',
-          market: 'Hyderabad APMC'
+          message: `Wholesale rate for ${prod.name} dropped ${dropPct}% to ₹${curRef}/${prod.unit}.`,
+          currentPrice: curRef, previousPrice: prevRef, percentageChange: -dropPct,
+          purchaseCost: prod.purchaseCost, sellingPrice: prod.sellingPrice,
+          source: prod.priceSource || 'AGMARKNET', market: 'Hyderabad APMC'
         }));
       }
-
       if (curRef && prevRef && curRef > prevRef) {
         const risePct = parseFloat((((curRef - prevRef) / prevRef) * 100).toFixed(1));
         createdAlerts.push(await Alert.create({
-          userId,
-          product: prod._id,
-          type: 'PRICE_INCREASE',
+          userId, product: prod._id, type: 'PRICE_INCREASE',
           title: `📈 Wholesale Rate Surge: ${prod.name}`,
-          message: `Wholesale mandi rate jumped by ${risePct}% to ₹${curRef}/${prod.unit}. Review your selling price (₹${prod.sellingPrice}) to protect margin.`,
-          currentPrice: curRef,
-          previousPrice: prevRef,
-          percentageChange: risePct,
-          purchaseCost: cost,
-          sellingPrice: prod.sellingPrice,
-          source: prod.priceSource || 'AGMARKNET',
-          market: 'Hyderabad APMC'
+          message: `Rate for ${prod.name} jumped ${risePct}% to ₹${curRef}/${prod.unit}.`,
+          currentPrice: curRef, previousPrice: prevRef, percentageChange: risePct,
+          purchaseCost: prod.purchaseCost, sellingPrice: prod.sellingPrice,
+          source: prod.priceSource || 'AGMARKNET', market: 'Hyderabad APMC'
         }));
       }
-
       if (stock <= minStock) {
         createdAlerts.push(await Alert.create({
-          userId,
-          product: prod._id,
-          type: 'LOW_STOCK',
-          title: `⚠️ Critical Low Inventory: ${prod.name}`,
-          message: `Current stock of ${prod.name} is ${stock} ${prod.unit} (threshold: ${minStock} ${prod.unit}).`,
-          currentPrice: curRef || cost,
-          purchaseCost: cost,
-          sellingPrice: prod.sellingPrice,
-          source: 'INVENTORY_SCAN',
-          market: 'Store Ledger'
+          userId, product: prod._id, type: 'LOW_STOCK',
+          title: `⚠️ Low Inventory: ${prod.name}`,
+          message: `${prod.name} stock is ${stock} ${prod.unit} (threshold: ${minStock} ${prod.unit}).`,
+          currentPrice: curRef || prod.purchaseCost,
+          purchaseCost: prod.purchaseCost, sellingPrice: prod.sellingPrice,
+          source: 'INVENTORY_SCAN', market: 'Store Ledger'
         }));
       }
     }
 
-    if (createdAlerts.length === 0 && products.length > 0) {
-      const p = products[0];
-      createdAlerts.push(await Alert.create({
-        userId,
-        product: p._id,
-        type: 'AI_INSIGHT',
-        title: `🤖 AI Market Health Check: ${p.name}`,
-        message: `Current Telangana mandi benchmark is ₹${p.currentReferencePrice || p.purchaseCost}/${p.unit}. Inventory is adequate and wholesale arrivals are steady.`,
-        currentPrice: p.currentReferencePrice || p.purchaseCost,
-        previousPrice: p.previousReferencePrice || p.purchaseCost,
-        purchaseCost: p.purchaseCost,
-        sellingPrice: p.sellingPrice,
-        source: 'AI_INTELLIGENCE',
-        market: 'Telangana APMC'
-      }));
-    }
-
-    return {
-      executed: true,
-      type: 'SCAN_ALERTS',
-      count: createdAlerts.length
-    };
+    return { executed: true, type: 'SCAN_ALERTS', count: createdAlerts.length };
   }
 
-  // 8. MARK ALL ALERTS AS READ
+  // ── MARK ALL ALERTS AS READ ──
   if (normAction === 'MARK_ALERTS_READ' || normAction === 'CLEAR_ALERTS') {
     await Alert.updateMany({ userId, isRead: false }, { isRead: true });
-    return {
-      executed: true,
-      type: 'MARK_ALERTS_READ'
-    };
+    return { executed: true, type: 'MARK_ALERTS_READ' };
   }
 
   return { executed: false };
 };
 
 /**
- * Robust Deterministic NLP Fallback Engine when LLM is unavailable
+ * Build rich, personality-driven system prompt with live store data
  */
-const fallbackRuleEngine = async (userId, message, products, suppliers, todaySales) => {
-  const lower = message.toLowerCase().trim();
+const buildSystemPrompt = (storeData) => {
+  const {
+    products, suppliers, todaySales, todayRevenue, todayProfit,
+    todayMargin, lowStockItems, totalStockValue, unreadAlerts
+  } = storeData;
 
-  // 1. Direct Alert Addition
-  if (lower.includes('add alert') || lower.includes('create alert') || lower.includes('set alert') || lower.includes('let me add alert')) {
-    const prod = findProductByName(products, lower) || (products.length > 0 ? products[0] : null);
-    if (prod) {
-      const numMatch = lower.match(/(?:below|above|drops?|rises?|at|<|>)\s*(?:₹|rs\.?)?\s*(\d+(?:\.\d+)?)/i);
-      const targetVal = numMatch ? parseFloat(numMatch[1]) : parseFloat(((prod.currentReferencePrice || prod.purchaseCost) * 0.95).toFixed(2));
-      const cond = (lower.includes('above') || lower.includes('rises') || lower.includes('>')) ? 'PRICE_INCREASE' : 'PRICE_DECREASE';
+  const inventoryLines = products.map(p => {
+    const margin = p.sellingPrice > 0 && p.purchaseCost > 0
+      ? (((p.sellingPrice - p.purchaseCost) / p.sellingPrice) * 100).toFixed(0)
+      : '?';
+    return `  • ${p.name} — ${p.stockQuantity} ${p.unit} | Cost ₹${p.purchaseCost}/${p.unit} | Sell ₹${p.sellingPrice}/${p.unit} | Mandi ₹${p.currentReferencePrice || 'N/A'}/${p.unit} | Margin ~${margin}%`;
+  }).join('\n');
 
-      const actRes = await executeStoreAction(userId, 'CREATE_ALERT', {
-        commodity: prod.name,
-        condition: cond,
-        targetValue: targetVal
-      }, products, suppliers);
+  return `You are MarketMind AI — the personal business assistant for an Indian grocery and commodity store. You're like a smart, trusted "munshi" (business manager) who genuinely cares about the shopkeeper's profits and runs the store alongside them.
 
-      return {
-        executed: true,
-        type: 'CREATE_ALERT',
-        reply: `I've set up an alert for you right here! I'm monitoring **${prod.name}** and will notify you as soon as the APMC mandi rate ${cond === 'PRICE_INCREASE' ? 'rises above' : 'drops below'} **₹${targetVal}/${prod.unit}**. You can view it anytime on your Alerts page.`,
-        suggestions: ['View all alerts', 'Latest mandi rates', "Today's sales"]
-      };
-    }
-  }
+YOUR PERSONALITY & TONE:
+- Talk naturally like a smart Indian business friend — warm, direct, and confident
+- Keep it SHORT: 1-3 sentences for simple things, 3-5 for detailed analysis
+- Never write walls of text, bullet-point dumps, or generic business advice
+- Be opinionated: say "I'd suggest..." or "Go for it!" — not "you might consider"
+- Reference REAL numbers from the store data — never make up data
+- Use ₹ for all currency
+- Add occasional emoji — but don't overload (1-2 per response max)
+- If you notice a business issue (low stock, thin margins), proactively mention it
+- Sound like a human partner, not a robot or a customer service bot
 
-  // 2. Direct Sale Recording
-  const saleMatch = lower.match(/(?:sell|sold|record sale)\s+(\d+(?:\.\d+)?)\s*(kg|quintal|litre)?\s+(?:of\s+)?([a-z0-9\s()\-]+?)(?:\s+(?:at|for|@)\s*(?:₹|rs\.?)?\s*(\d+(?:\.\d+)?))?$/i);
-  if (saleMatch) {
-    const qty = parseFloat(saleMatch[1]);
-    const prodName = saleMatch[3];
-    const unitPrice = saleMatch[4] ? parseFloat(saleMatch[4]) : null;
-    const actRes = await executeStoreAction(userId, 'RECORD_SALE', { commodity: prodName, quantity: qty, unitPrice }, products, suppliers);
+═══════════════════════════════════
+YOUR STORE — LIVE SNAPSHOT
+═══════════════════════════════════
+📦 Products: ${products.length} commodities
+💰 Inventory Value: ₹${totalStockValue.toLocaleString('en-IN')}
+📊 Today: ${todaySales.length} sales | Revenue ₹${todayRevenue.toLocaleString('en-IN')} | Profit ₹${todayProfit.toLocaleString('en-IN')} (${todayMargin}% margin)
+🔔 Unread Alerts: ${unreadAlerts.length}
+⚠️ Low Stock: ${lowStockItems.length > 0 ? lowStockItems.map(p => `${p.name} (${p.stockQuantity} ${p.unit})`).join(', ') : 'All stocked up 👍'}
+👥 Suppliers: ${suppliers.length > 0 ? suppliers.map(s => s.name).join(', ') : 'None yet'}
 
-    if (actRes.executed) {
-      return {
-        executed: true,
-        type: 'RECORD_SALE',
-        reply: `Done! I've recorded the sale of **${qty} ${actRes.unit} ${actRes.productName}** for **₹${actRes.revenue.toLocaleString('en-IN')}**. Your gross profit is **₹${actRes.profit.toLocaleString('en-IN')}**, leaving **${actRes.remainingStock} ${actRes.unit}** in stock.`,
-        suggestions: ["Today's sales summary", `Check ${actRes.productName} stock`, 'Latest market prices']
-      };
-    } else if (actRes.message) {
-      return { executed: false, reply: actRes.message, suggestions: ['Check inventory', 'Latest mandi rates'] };
-    }
-  }
+📋 INVENTORY:
+${inventoryLines || '  (Empty — no products added yet)'}
+═══════════════════════════════════
 
-  // 3. Today's Business Summary
-  if (lower.includes('today') && (lower.includes('sale') || lower.includes('profit') || lower.includes('revenue') || lower.includes('how is business'))) {
-    const totalRev = todaySales.reduce((s, x) => s + (x.totalRevenue || 0), 0);
-    const totalProf = todaySales.reduce((s, x) => s + (x.grossProfit || 0), 0);
-    const margin = totalRev > 0 ? ((totalProf / totalRev) * 100).toFixed(1) : '0';
+ACTIONS YOU CAN EXECUTE:
+You're not just a chatbot — you directly run store operations. When the user wants something done, set the right action:
 
-    return {
-      executed: false,
-      reply: `Here's how today looks: you've completed **${todaySales.length} orders**, generating **₹${totalRev.toLocaleString('en-IN')}** in revenue with **₹${totalProf.toLocaleString('en-IN')}** in gross profit (${margin}% overall margin).`,
-      suggestions: ['Check low stock', 'Latest market prices', 'Set price alert']
-    };
-  }
+| Action            | Params Needed                                                    |
+|-------------------|------------------------------------------------------------------|
+| RECORD_SALE       | { commodity, quantity, unitPrice? (optional), customer? }        |
+| RECORD_PURCHASE   | { commodity, quantity, unitCost }                                |
+| CREATE_ALERT      | { commodity, condition: PRICE_DECREASE/PRICE_INCREASE/LOW_STOCK, targetValue } |
+| UPDATE_PRICE      | { commodity, newPrice }                                          |
+| ADD_PRODUCT       | { name, cost, sellingPrice, category?, stock?, unit? }           |
+| FETCH_MANDI       | {} (syncs latest APMC mandi rates)                               |
+| SCAN_ALERTS       | {} (scans inventory for issues and creates alerts)               |
+| MARK_ALERTS_READ  | {}                                                               |
+| NONE              | {} (for greetings, answers, advice — no database change)         |
 
-  // 4. Default Friendly Greeting / Help
-  const totalStockVal = products.reduce((s, p) => s + (p.stockQuantity * p.purchaseCost), 0);
-  return {
-    executed: false,
-    reply: `Hello! I'm your MarketMind Copilot. You currently have **${products.length} commodities** tracked with a stock value of **₹${totalStockVal.toLocaleString('en-IN')}**. Tell me what you'd like to do — set an alert, record a sale, check mandi rates, or update prices!`,
-    suggestions: ['+ Add Alert', 'Latest mandi rates', "Today's sales", 'Check low stock']
-  };
+ABSOLUTE RULES — NEVER BREAK:
+1. ONLY discuss store and business topics: products, stock, prices, mandi rates, sales, purchases, profits, margins, suppliers, alerts, and MarketMind features.
+2. If someone asks about ANYTHING unrelated (politics, weather, sports, movies, coding, jokes, recipes, general knowledge, math, science, personal life, news, etc.) — warmly decline. Example: "Haha, I wish I knew! But I'm strictly your store guy 😄 Ask me about stock, sales, or prices!"
+3. NEVER invent product data. Only talk about products listed in the inventory above. If a product isn't there, say so clearly.
+4. When you execute a sale or purchase, always state the quantity, product, and ₹ amount clearly.
+5. If the user's request is unclear, ask ONE short clarifying question — don't guess.
+6. Never say "I'm just an AI" — stay in character as their business partner.
+7. When the store inventory is empty, encourage the user to add products first.
+
+EXAMPLES OF GOOD RESPONSES:
+
+User: "hi"
+→ {"action":"NONE","params":{},"reply":"Hey! 👋 Welcome back. You've got ${products.length} products worth ₹${totalStockValue.toLocaleString('en-IN')} in stock. What can I help with today?","suggestions":["Today's sales","Check low stock","Mandi rates"]}
+
+User: "sell 5 kg rice at 48"
+→ {"action":"RECORD_SALE","params":{"commodity":"Rice","quantity":5,"unitPrice":48},"reply":"Done! Billing 5 kg Rice at ₹48/kg — that's ₹240 in the register 💰","suggestions":["Today's total profit","Check Rice stock","Sell more"]}
+
+User: "tell me a joke"
+→ {"action":"NONE","params":{},"reply":"Ha! I'm tempted, but jokes aren't my department 😄 I'm all about your store — ask me about stock levels, mandi prices, or sales!","suggestions":["Today's business","Low stock items","Market prices"]}
+
+User: "which items are running low?"
+→ {"action":"NONE","params":{},"reply":"${lowStockItems.length > 0 ? `Watch out — ${lowStockItems.map(p => p.name).join(', ')} ${lowStockItems.length === 1 ? 'is' : 'are'} running thin. I'd restock soon before the mandi rates climb.` : `Everything looks healthy! No items below their safety stock right now 👍`}","suggestions":["Restock suggestions","Set low stock alert","Mandi rates"]}
+
+OUTPUT FORMAT — respond with ONLY a valid JSON object:
+{
+  "action": "NONE",
+  "params": {},
+  "reply": "your warm, natural, human response",
+  "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3"]
+}`;
 };
 
 /**
- * @desc    Main AI Copilot Conversational & Agentic Dispatcher
- * @route   POST /api/ai/chat
+ * @desc    AI Copilot Chat Handler — Pure Gemini Engine
+ * @route   POST /api/chatbot  |  POST /api/chatbot/message
  * @access  Private
  */
 const handleChat = async (req, res) => {
@@ -484,129 +410,182 @@ const handleChat = async (req, res) => {
     const userId = req.user.id;
 
     if (!message || message.trim() === '') {
-      return res.status(400).json({
-        success: false,
-        message: 'Message is required'
+      return res.status(400).json({ success: false, message: 'Message is required' });
+    }
+
+    // ── Guard: Gemini must be available ──
+    if (!chatModel) {
+      return res.status(200).json({
+        success: true,
+        source: 'SYSTEM',
+        reply: "Hey! The AI engine needs a Gemini API key to work. Add your GEMINI_API_KEY to the server .env file and restart. Get a free key at https://aistudio.google.com/app/apikey 🔑",
+        action: null,
+        suggestions: ['How to set up Gemini?']
       });
     }
 
-    // 1. Fetch live store state
+    // ── 1. Fetch live store state ──
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    const [products, suppliers, recentMarketPrices, unreadAlerts, todaySales] = await Promise.all([
+    const [products, suppliers, unreadAlerts, todaySales] = await Promise.all([
       Product.find({ userId, isActive: true }),
       Supplier.find({ userId }),
-      MarketPrice.find({ userId }).sort({ fetchTime: -1 }).limit(10),
       Alert.find({ userId, isRead: false }).sort({ createdAt: -1 }).limit(5),
       Sale.find({ userId, saleDate: { $gte: todayStart, $lte: todayEnd } })
     ]);
 
     const totalStockValue = products.reduce((sum, p) => sum + (p.stockQuantity * p.purchaseCost), 0);
-    const lowStockItems = products.filter((p) => p.stockQuantity <= p.minStockLevel);
+    const lowStockItems = products.filter(p => p.stockQuantity <= (p.minStockLevel || 10));
     const todayRevenue = todaySales.reduce((s, x) => s + (x.totalRevenue || 0), 0);
     const todayProfit = todaySales.reduce((s, x) => s + (x.grossProfit || 0), 0);
     const todayMargin = todayRevenue > 0 ? ((todayProfit / todayRevenue) * 100).toFixed(1) : '0';
 
-    // 2. Intelligent Agent Reasoning with Gemini
-    if (jsonModel) {
-      try {
-        const inventoryContext = products.slice(0, 20).map((p) =>
-          `• ${p.name}: Stock ${p.stockQuantity} ${p.unit}, Cost ₹${p.purchaseCost}/${p.unit}, Selling ₹${p.sellingPrice}/${p.unit}, APMC Mandi Benchmark ₹${p.currentReferencePrice || p.purchaseCost}/${p.unit}`
-        ).join('\n');
+    // ── 2. Build the system prompt with live data ──
+    const systemPrompt = buildSystemPrompt({
+      products, suppliers, todaySales, todayRevenue, todayProfit,
+      todayMargin, lowStockItems, totalStockValue, unreadAlerts
+    });
 
-        const systemPrompt = `You are MarketMind AI, a human-like, proactive co-pilot and business partner for a grocery store in Telangana, India.
-
-STORE REAL-TIME STATE:
-- Total Products Tracked: ${products.length} commodities
-- Total Inventory Value: ₹${totalStockValue.toLocaleString('en-IN')}
-- Low Stock Items: ${lowStockItems.length > 0 ? lowStockItems.map((p) => `${p.name} (${p.stockQuantity} ${p.unit})`).join(', ') : 'None, all healthy'}
-- Today's Sales: ${todaySales.length} orders, Revenue: ₹${todayRevenue.toLocaleString('en-IN')}, Gross Profit: ₹${todayProfit.toLocaleString('en-IN')} (${todayMargin}% margin)
-- Unread Alerts: ${unreadAlerts.length}
-- Primary Commodities & APMC Benchmarks:
-${inventoryContext}
-
-YOUR AGENTIC CAPABILITIES:
-You are not just a chatbot — you EXECUTE actions directly in the store database. When the user requests a task, specify the action and its parameters in your output:
-- CREATE_ALERT: params { commodity: string, condition: 'PRICE_DECREASE' | 'PRICE_INCREASE' | 'LOW_STOCK', targetValue: number }
-  * IMPORTANT: If user says "let me add alert from here also", "add alert", "create alert", or "set alert" without complete details, set action to CREATE_ALERT for the primary product ("${products[0]?.name || 'Rice'}") with a 5% drop threshold (₹${Math.round((products[0]?.currentReferencePrice || 40) * 0.95)})!
-- RECORD_SALE: params { commodity: string, quantity: number, unitPrice?: number, customer?: string }
-- RECORD_PURCHASE: params { commodity: string, quantity: number, unitCost: number }
-- UPDATE_PRICE: params { commodity: string, newPrice: number }
-- ADD_PRODUCT: params { name: string, category?: string, cost: number, sellingPrice: number, stock?: number, unit?: string }
-- FETCH_MANDI: params {}
-- SCAN_ALERTS: params {}
-- MARK_ALERTS_READ: params {}
-- NONE: params {} (use when greeting, answering questions, price checks, profitability advice, or general chat)
-
-CRITICAL INSTRUCTIONS FOR REPLY:
-1. Speak warmly, naturally, and intelligently like an experienced Indian store manager and trusted partner.
-2. If executing an action, explain what you did in 1-2 friendly, conversational sentences.
-3. If giving advice or answering queries, cite concrete numbers from the store context.
-4. Always use Indian Rupee (₹).
-5. Never sound robotic. Never dump long generic manuals.
-
-User Message: "${message}"
-
-Output ONLY a JSON object:
-{
-  "action": "CREATE_ALERT" | "RECORD_SALE" | "RECORD_PURCHASE" | "UPDATE_PRICE" | "ADD_PRODUCT" | "FETCH_MANDI" | "SCAN_ALERTS" | "MARK_ALERTS_READ" | "NONE",
-  "params": {},
-  "reply": "Warm, human conversational response",
-  "suggestions": ["3 short relevant suggestions"]
-}`;
-
-        const geminiRes = await jsonModel.generateContent(systemPrompt);
-        const parsed = JSON.parse(geminiRes.response.text());
-
-        // Execute action if identified
-        let actionResult = { executed: false };
-        let finalReply = parsed.reply;
-        if (parsed.action && parsed.action !== 'NONE') {
-          actionResult = await executeStoreAction(userId, parsed.action, parsed.params, products, suppliers);
-          if (actionResult.executed) {
-            if (actionResult.type === 'RECORD_SALE' && !finalReply.includes('Sale Recorded')) {
-              finalReply += `\n\n✅ **Sale Recorded**: ${actionResult.quantity} ${actionResult.unit} ${actionResult.productName} for ₹${actionResult.revenue.toLocaleString('en-IN')}.`;
-            } else if (actionResult.type === 'CREATE_ALERT' && !finalReply.includes('Alert Added')) {
-              finalReply += `\n\n✅ **Alert Added**: ${actionResult.productName} (Trigger: ₹${actionResult.targetValue}/${actionResult.unit}).`;
-            }
-          }
-        }
-
-        return res.status(200).json({
-          success: true,
-          source: 'GEMINI_AI',
-          reply: finalReply,
-          action: actionResult.executed ? { type: actionResult.type, data: actionResult.data || null } : null,
-          suggestions: parsed.suggestions || ['Check inventory', "Today's sales", 'Latest mandi rates']
-        });
-      } catch (geminiError) {
-        console.warn('[Gemini AI] Agent inference warning, falling back to rule engine:', geminiError.message);
-      }
+    // ── 3. Format conversation history ──
+    const recentHistory = history.slice(-10);
+    // Remove current message from history (it's passed separately as the prompt)
+    if (recentHistory.length > 0 && recentHistory[recentHistory.length - 1]?.content === message) {
+      recentHistory.pop();
     }
 
-    // 3. Fallback Deterministic Engine
-    const fallbackResult = await fallbackRuleEngine(userId, message, products, suppliers, todaySales);
+    const conversationContext = recentHistory.length > 0
+      ? recentHistory.map(msg => {
+          const role = msg.role === 'user' ? 'Customer' : 'MarketMind';
+          return `${role}: ${msg.content}`;
+        }).join('\n\n')
+      : '(New conversation — no prior messages)';
 
-    return res.status(200).json({
-      success: true,
-      source: 'COPILOT_ENGINE',
-      reply: fallbackResult.reply,
-      action: fallbackResult.executed ? { type: fallbackResult.type } : null,
-      suggestions: fallbackResult.suggestions || ['Check inventory', "Today's sales", 'Latest market rates']
-    });
+    // ── 4. Compose full prompt ──
+    const fullPrompt = `${systemPrompt}
+
+───── CONVERSATION SO FAR ─────
+${conversationContext}
+
+───── CUSTOMER SAYS NOW ─────
+"${message}"
+
+Respond with ONLY the JSON object:`;
+
+    // ── 5. Call Gemini ──
+    try {
+      let result;
+      try {
+        result = await chatModel.generateContent(fullPrompt);
+      } catch (err1) {
+        if (fallbackModel) {
+          result = await fallbackModel.generateContent(fullPrompt);
+        } else {
+          throw err1;
+        }
+      }
+      const responseText = result.response.text();
+
+      let parsed;
+      try {
+        parsed = JSON.parse(responseText);
+      } catch {
+        // If Gemini somehow returns non-JSON, use the raw text
+        parsed = {
+          action: 'NONE',
+          params: {},
+          reply: responseText.replace(/```json\n?|\n?```/g, '').trim(),
+          suggestions: ['Check inventory', "Today's sales", 'Mandi rates']
+        };
+      }
+
+      // ── 6. Execute action if Gemini requested one ──
+      let actionResult = { executed: false };
+      let finalReply = parsed.reply || "Got it!";
+
+      if (parsed.action && parsed.action !== 'NONE') {
+        actionResult = await executeStoreAction(
+          userId, parsed.action, parsed.params || {}, products, suppliers
+        );
+
+        if (actionResult.executed) {
+          // Append concrete confirmation if Gemini's reply missed the numbers
+          switch (actionResult.type) {
+            case 'RECORD_SALE':
+              if (!finalReply.includes('Sale Recorded')) {
+                finalReply += `\n\n✅ **Sale Recorded**: Sold ${actionResult.quantity} ${actionResult.unit} ${actionResult.productName} for ₹${actionResult.revenue.toLocaleString('en-IN')}. Profit: ₹${actionResult.profit.toLocaleString('en-IN')}. Stock remaining: ${actionResult.remainingStock} ${actionResult.unit}.`;
+              }
+              break;
+            case 'RECORD_PURCHASE':
+              if (!finalReply.includes('Purchase Recorded')) {
+                finalReply += `\n\n✅ **Purchase Recorded**: Restocked ${actionResult.quantity} ${actionResult.unit} ${actionResult.productName}. New avg cost: ₹${actionResult.newCost}/${actionResult.unit}. Total stock: ${actionResult.newStock} ${actionResult.unit}.`;
+              }
+              break;
+            case 'CREATE_ALERT':
+              if (!finalReply.includes('Alert Added')) {
+                finalReply += `\n\n✅ **Alert Added**: ${actionResult.productName} (Trigger: ₹${actionResult.targetValue}/${actionResult.unit}).`;
+              }
+              break;
+            case 'UPDATE_PRICE':
+              if (!finalReply.includes('Price Updated')) {
+                finalReply += `\n\n✅ **Price Updated**: ${actionResult.productName} selling price updated from ₹${actionResult.oldPrice} → ₹${actionResult.newPrice}/${actionResult.unit}.`;
+              }
+              break;
+            case 'ADD_PRODUCT':
+              if (!finalReply.toLowerCase().includes('added')) {
+                finalReply += `\n\n✅ **Product added:** ${actionResult.productName} is now in your inventory!`;
+              }
+              break;
+            case 'FETCH_PRICES':
+              if (!finalReply.toLowerCase().includes('sync') && !finalReply.toLowerCase().includes('fetch')) {
+                finalReply += `\n\n🔄 Mandi rates synced from AGMARKNET!`;
+              }
+              break;
+            case 'SCAN_ALERTS':
+              finalReply += `\n\n🔍 Scanned inventory — ${actionResult.count} alert(s) generated.`;
+              break;
+            case 'MARK_ALERTS_READ':
+              if (!finalReply.toLowerCase().includes('clear') && !finalReply.toLowerCase().includes('read')) {
+                finalReply += `\n\n✅ All alerts marked as read!`;
+              }
+              break;
+          }
+        } else if (actionResult.message) {
+          finalReply += `\n\n⚠️ ${actionResult.message}`;
+        }
+      }
+
+      return res.status(200).json({
+        success: true,
+        source: 'GEMINI_AI',
+        reply: finalReply,
+        action: actionResult.executed
+          ? { type: actionResult.type, data: actionResult.data || null }
+          : null,
+        suggestions: parsed.suggestions || ['Check inventory', "Today's sales", 'Latest mandi rates']
+      });
+
+    } catch (geminiError) {
+      console.error('[Gemini AI] Chat error:', geminiError.message);
+      return res.status(200).json({
+        success: true,
+        source: 'ERROR',
+        reply: `Oops, my AI brain hiccupped for a second! 😅 Try again — I'll be right back.\n\n_Error: ${geminiError.message}_`,
+        action: null,
+        suggestions: ['Try again', 'Check inventory', "Today's sales"]
+      });
+    }
+
   } catch (error) {
-    console.error('Error in chatbot dispatcher:', error);
+    console.error('Error in chatbot handler:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to process chat command',
+      message: 'Failed to process chat',
       error: error.message
     });
   }
 };
 
-module.exports = {
-  handleChat
-};
+module.exports = { handleChat };

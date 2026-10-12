@@ -124,7 +124,7 @@ const AIInsights = ({ isEmbedded = false }) => {
             <h2 className="h3 fw-bold text-dark mb-0">AI Market Intelligence & Forecasting</h2>
             <span className={`badge ${isAiPowered ? 'bg-success' : 'bg-primary-subtle text-primary border border-primary-subtle'}`}>
               <BsCpu className="me-1" />
-              {isAiPowered ? 'Gemini 3.5 Flash Active' : 'Deterministic Rule Engine Active'}
+              {isAiPowered ? 'Gemini 3.8 Flash Active' : 'Deterministic Rule Engine Active'}
             </span>
           </div>
           <p className="text-muted small mb-0 mt-1">
@@ -147,31 +147,38 @@ const AIInsights = ({ isEmbedded = false }) => {
           </div>
         </div>
         <div className="card-body p-4">
-          <div className="row g-4 align-items-center">
-            <div className="col-12 col-lg-8">
-              <div className="p-3 bg-light rounded-3 border">
-                <p className="lead fs-6 text-dark mb-0" style={{ whiteSpace: 'pre-line', lineHeight: '1.7' }}>
-                  {marketInsights?.insights || 'Commodity prices are generally stable across major Hyderabad wholesale yards.'}
-                </p>
-              </div>
+          {loading ? (
+            <div className="py-4 text-center text-muted">
+              <div className="spinner-border spinner-border-sm text-primary me-2" role="status" />
+              Synthesizing multi-mandi intelligence...
             </div>
-            <div className="col-12 col-lg-4">
-              <div className="list-group shadow-sm">
-                <div className="list-group-item d-flex justify-content-between align-items-center p-3">
-                  <span className="text-muted small">Overall Trajectory:</span>
-                  <strong className="text-dark">{marketInsights?.stats?.marketStatus || 'Stable'}</strong>
-                </div>
-                <div className="list-group-item d-flex justify-content-between align-items-center p-3">
-                  <span className="text-muted small">Rising Mandi Commodities:</span>
-                  <span className="badge bg-danger-subtle text-danger fs-6">{marketInsights?.stats?.risingCount || 0}</span>
-                </div>
-                <div className="list-group-item d-flex justify-content-between align-items-center p-3">
-                  <span className="text-muted small">Softening Commodities:</span>
-                  <span className="badge bg-success-subtle text-success fs-6">{marketInsights?.stats?.fallingCount || 0}</span>
+          ) : (
+            <div className="row g-4 align-items-center">
+              <div className="col-12 col-lg-8">
+                <div className="p-3 bg-light rounded-3 border">
+                  <p className="lead fs-6 text-dark mb-0" style={{ whiteSpace: 'pre-line', lineHeight: '1.7' }}>
+                    {marketInsights?.insights || 'Commodity prices are generally stable across major Hyderabad wholesale yards.'}
+                  </p>
                 </div>
               </div>
+              <div className="col-12 col-lg-4">
+                <div className="list-group shadow-sm">
+                  <div className="list-group-item d-flex justify-content-between align-items-center p-3">
+                    <span className="text-muted small">Overall Trajectory:</span>
+                    <strong className="text-dark">{marketInsights?.stats?.marketStatus || 'Stable'}</strong>
+                  </div>
+                  <div className="list-group-item d-flex justify-content-between align-items-center p-3">
+                    <span className="text-muted small">Rising Mandi Commodities:</span>
+                    <span className="badge bg-danger-subtle text-danger fs-6">{marketInsights?.stats?.risingCount || 0}</span>
+                  </div>
+                  <div className="list-group-item d-flex justify-content-between align-items-center p-3">
+                    <span className="text-muted small">Softening Commodities:</span>
+                    <span className="badge bg-success-subtle text-success fs-6">{marketInsights?.stats?.fallingCount || 0}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -183,26 +190,34 @@ const AIInsights = ({ isEmbedded = false }) => {
               <BsGraphUp className="text-success fs-5" />
               <h5 className="fw-bold text-dark mb-0">Commodity Analysis & Short-Term Forecast</h5>
             </div>
-            <div className="d-flex align-items-center gap-2">
-              <label className="small text-muted fw-semibold">Analyze Commodity:</label>
-              <select
-                className="form-select form-select-sm"
-                style={{ width: '220px' }}
-                value={selectedProductId}
-                onChange={(e) => setSelectedProductId(e.target.value)}
-              >
-                {products.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {products.length > 0 && (
+              <div className="d-flex align-items-center gap-2">
+                <label className="small text-muted fw-semibold">Analyze Commodity:</label>
+                <select
+                  className="form-select form-select-sm"
+                  style={{ width: '220px' }}
+                  value={selectedProductId}
+                  onChange={(e) => setSelectedProductId(e.target.value)}
+                >
+                  {products.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
         <div className="card-body p-4">
-          {loadingAnalysis ? (
+          {products.length === 0 ? (
+            <div className="p-4 text-center text-muted">
+              <BsBoxSeam size={32} className="text-secondary mb-2 d-block mx-auto" />
+              <h6 className="text-dark fw-bold mb-1">Catalog Empty</h6>
+              <p className="small mb-0">Add products to your store catalog to enable AI price forecasts, margin projections, and trend analysis.</p>
+            </div>
+          ) : loadingAnalysis ? (
             <LoadingSpinner message="Calculating statistical momentum..." />
           ) : (
             <div className="row g-4">

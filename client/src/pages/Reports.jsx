@@ -296,24 +296,33 @@ const Reports = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {inventoryData.map((item) => (
-                          <tr key={item._id}>
-                            <td className="ps-3">
-                              <strong>{item.name}</strong>
-                              <span className="d-block text-muted small">{item.variety || 'Standard'}</span>
-                            </td>
-                            <td><span className="badge bg-light text-dark border">{item.category}</span></td>
-                            <td><strong>{item.stockQuantity}</strong> {item.unit}</td>
-                            <td>{formatCurrency(item.purchaseCost)}</td>
-                            <td className="text-primary">{formatCurrency(item.sellingPrice)}</td>
-                            <td className="fw-bold text-dark">
-                              {formatCurrency(item.totalStockValue || (item.stockQuantity * item.purchaseCost))}
-                            </td>
-                            <td>
-                              <StockStatus quantity={item.stockQuantity} minLevel={item.minStockLevel || 10} />
+                        {inventoryData.length > 0 ? (
+                          inventoryData.map((item) => (
+                            <tr key={item._id}>
+                              <td className="ps-3">
+                                <strong>{item.name}</strong>
+                                <span className="d-block text-muted small">{item.variety || 'Standard'}</span>
+                              </td>
+                              <td><span className="badge bg-light text-dark border">{item.category}</span></td>
+                              <td><strong>{item.stockQuantity}</strong> {item.unit}</td>
+                              <td>{formatCurrency(item.purchaseCost)}</td>
+                              <td className="text-primary">{formatCurrency(item.sellingPrice)}</td>
+                              <td className="fw-bold text-dark">
+                                {formatCurrency(item.totalStockValue || (item.stockQuantity * item.purchaseCost))}
+                              </td>
+                              <td>
+                                <StockStatus quantity={item.stockQuantity} minLevel={item.minStockLevel || 10} />
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="7" className="text-center py-5 text-muted">
+                              <BsBoxSeam size={32} className="text-secondary mb-2 d-block mx-auto" />
+                              No inventory records found. Add commodities in Products to track valuation.
                             </td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                       <tfoot>
                         <tr className="table-light">
@@ -346,16 +355,25 @@ const Reports = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {purchaseData.map((p) => (
-                          <tr key={p._id}>
-                            <td className="ps-3">{formatDate(p.purchaseDate || p.createdAt)}</td>
-                            <td><strong>{p.product?.name || 'Commodity'}</strong></td>
-                            <td><strong>{p.quantity}</strong> {p.unit}</td>
-                            <td>{formatCurrency(p.unitCost)}</td>
-                            <td className="fw-bold text-dark">{formatCurrency(p.totalAmount)}</td>
-                            <td><span className="font-monospace text-muted small">{p.invoiceNumber || '—'}</span></td>
+                        {purchaseData.length > 0 ? (
+                          purchaseData.map((p) => (
+                            <tr key={p._id}>
+                              <td className="ps-3">{formatDate(p.purchaseDate || p.createdAt)}</td>
+                              <td><strong>{p.product?.name || 'Commodity'}</strong></td>
+                              <td><strong>{p.quantity}</strong> {p.unit}</td>
+                              <td>{formatCurrency(p.unitCost)}</td>
+                              <td className="fw-bold text-dark">{formatCurrency(p.totalAmount)}</td>
+                              <td><span className="font-monospace text-muted small">{p.invoiceNumber || '—'}</span></td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="6" className="text-center py-5 text-muted">
+                              <BsCartPlus size={32} className="text-secondary mb-2 d-block mx-auto" />
+                              No procurement logs recorded for the selected date range.
+                            </td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                       <tfoot>
                         <tr className="table-light">
@@ -387,21 +405,30 @@ const Reports = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {priceHistoryData.map((ph) => (
-                          <tr key={ph._id}>
-                            <td className="ps-3">{formatDate(ph.observationDate || ph.createdAt)}</td>
-                            <td><strong>{ph.commodity}</strong> ({ph.variety || 'Standard'})</td>
-                            <td>{ph.market || 'Hyderabad'}</td>
-                            <td><strong className="fs-6 text-dark">₹{ph.pricePerKg}</strong></td>
-                            <td className="text-muted">₹{(ph.minPrice / 100).toFixed(2)}</td>
-                            <td className="text-muted">₹{(ph.maxPrice / 100).toFixed(2)}</td>
-                            <td>
-                              <span className={`badge ${ph.source === 'DEMO' ? 'bg-warning text-dark' : 'bg-success'}`}>
-                                {ph.source}
-                              </span>
+                        {priceHistoryData.length > 0 ? (
+                          priceHistoryData.map((ph) => (
+                            <tr key={ph._id}>
+                              <td className="ps-3">{formatDate(ph.observationDate || ph.createdAt)}</td>
+                              <td><strong>{ph.commodity}</strong> ({ph.variety || 'Standard'})</td>
+                              <td>{ph.market || 'Hyderabad'}</td>
+                              <td><strong className="fs-6 text-dark">₹{ph.pricePerKg}</strong></td>
+                              <td className="text-muted">₹{(ph.minPrice / 100).toFixed(2)}</td>
+                              <td className="text-muted">₹{(ph.maxPrice / 100).toFixed(2)}</td>
+                              <td>
+                                <span className={`badge ${ph.source === 'DEMO' ? 'bg-warning text-dark' : 'bg-success'}`}>
+                                  {ph.source}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="7" className="text-center py-5 text-muted">
+                              <BsGraphUp size={32} className="text-secondary mb-2 d-block mx-auto" />
+                              No mandi benchmark history observed yet.
                             </td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                     </table>
                   </div>

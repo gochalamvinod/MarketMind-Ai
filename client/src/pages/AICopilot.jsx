@@ -10,21 +10,10 @@ import Chatbot from './Chatbot'
  */
 const AICopilot = () => {
   const [searchParams, setSearchParams] = useSearchParams()
-  const initialTab = searchParams.get('tab') === 'chat' ? 'chat' : 'insights'
-  const [activeTab, setActiveTab] = useState(initialTab)
-
-  useEffect(() => {
-    const tabParam = searchParams.get('tab')
-    if (tabParam === 'chat' && activeTab !== 'chat') {
-      setActiveTab('chat')
-    } else if (tabParam === 'insights' && activeTab !== 'insights') {
-      setActiveTab('insights')
-    }
-  }, [searchParams, activeTab])
+  const activeTab = searchParams.get('tab') === 'chat' ? 'chat' : 'insights'
 
   const handleTabChange = (tab) => {
-    setActiveTab(tab)
-    setSearchParams({ tab })
+    setSearchParams({ tab }, { replace: true })
   }
 
   return (

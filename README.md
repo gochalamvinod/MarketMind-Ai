@@ -49,14 +49,16 @@ The application is pre-configured with a clean launch state featuring a single a
 - Strictly adheres to accounting integrity: external market price swings **never** mutate historical book purchase costs.
 - COGS (Cost of Goods Sold) is computed dynamically at the exact instant of sale.
 
-### 3. AI Copilot & Business Chatbot (Google Gemini)
-- Conversational market assistant powered by **Google Gemini Pro 1.5**.
-- Contextually aware of your live catalog, stock levels, sales velocity, and regional APMC trends.
-- Answers queries such as:
+### 3. AI Copilot & Business Chatbot (Google Gemini Engine)
+- Dynamic conversational market assistant powered directly by **Google Gemini AI**.
+- Humanic, natural language reasoning contextually aware of your live store catalog, stock levels, weighted purchase costs, and regional APMC trends.
+- Capable of answering complex store operations and inventory questions:
   - *"Should I restock Sona Masoori rice now based on Hyderabad mandi trends?"*
   - *"Which dal gave me the highest gross profit margin this week?"*
   - *"Give me a negotiation recommendation for sunflower oil suppliers."*
-- Rule-based algorithmic fallback ensures continuous 24/7 intelligence even without an external AI key.
+  - *"What are my low-stock items that need urgent reordering?"*
+- **Domain-Focused & Secure**: Strictly scoped to store commodities, inventory, market trends, and retail operations.
+- **In-Memory LRU Caching**: Caches insight evaluations with fast sub-second failovers to ensure instantaneous frontend navigation without blocking page rendering.
 
 ### 4. Automated Volatility & Low Stock Alerts
 - Automated triggers flag sudden market shifts exceeding custom tolerance thresholds (default: $\pm 5\%$).
@@ -79,7 +81,7 @@ The application is pre-configured with a clean launch state featuring a single a
 
 | Layer | Technologies |
 |---|---|
-| **Frontend UI** | React 18, Vite 5, React Router DOM v6, Bootstrap 5, Bootstrap Icons |
+| **Frontend UI** | React 18 SPA, Vite 5, React Router DOM v6 (Nested Routes & `<Outlet />`), Bootstrap 5, Bootstrap Icons |
 | **Data Visualization** | Recharts, Custom CSS Responsive Dashboards |
 | **Backend Runtime** | Node.js (v18+ / v20+), Express.js 4 |
 | **Database & ODM** | MongoDB Atlas, Mongoose 8 |

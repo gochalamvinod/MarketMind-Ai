@@ -81,8 +81,8 @@ const MarketPrices = () => {
       const fetchedProducts = productsRes?.data?.data || productsRes?.data || []
       setProducts(fetchedProducts)
 
-      if (fetchedProducts.length > 0 && !selectedProductId) {
-        setSelectedProductId(fetchedProducts[0]._id)
+      if (fetchedProducts.length > 0) {
+        setSelectedProductId((prev) => (prev ? prev : fetchedProducts[0]._id))
       }
     } catch (err) {
       console.error('Error fetching market prices data:', err)
@@ -90,7 +90,7 @@ const MarketPrices = () => {
     } finally {
       setLoading(false)
     }
-  }, [selectedProductId])
+  }, [])
 
   useEffect(() => {
     fetchData()

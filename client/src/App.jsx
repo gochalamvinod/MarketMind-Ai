@@ -1,5 +1,5 @@
 import React from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Layout from './components/layout/Layout'
 import LoadingSpinner from './components/common/LoadingSpinner'
@@ -18,10 +18,11 @@ import Settings from './pages/Settings'
 import ProductDetail from './pages/ProductDetail'
 
 /**
- * ProtectedRoute wrapper
- * Redirects to /login if not authenticated
+ * ProtectedLayout wrapper
+ * Ensures user is authenticated, then mounts the persistent application shell (<Layout />).
+ * Child routes render smoothly inside <Outlet /> without unmounting Navbar/Sidebar/Chatbot.
  */
-const ProtectedRoute = ({ children }) => {
+const ProtectedLayout = () => {
   const { isAuthenticated, loading } = useAuth()
 
   if (loading) {
@@ -32,7 +33,11 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" replace />
   }
 
-  return <Layout>{children}</Layout>
+  return (
+    <Layout>
+      <Outlet />
+    </Layout>
+  )
 }
 
 /**
@@ -74,99 +79,32 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Protected Routes wrapped in Layout */}
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/products"
-        element={
-          <ProtectedRoute>
-            <Products />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/products/:id"
-        element={
-          <ProtectedRoute>
-            <ProductDetail />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/suppliers"
-        element={<Navigate to="/products" replace />}
-      />
-      <Route
-        path="/purchases"
-        element={
-          <ProtectedRoute>
-            <Purchases />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/sales"
-        element={<Navigate to="/purchases" replace />}
-      />
-      <Route
-        path="/market-prices"
-        element={
-          <ProtectedRoute>
-            <MarketPrices />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/ai-copilot"
-        element={
-          <ProtectedRoute>
-            <AICopilot />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/ai-insights"
-        element={<Navigate to="/ai-copilot?tab=insights" replace />}
-      />
-      <Route
-        path="/chatbot"
-        element={<Navigate to="/ai-copilot?tab=chat" replace />}
-      />
-      <Route
-        path="/alerts"
-        element={
-          <ProtectedRoute>
-            <Notifications />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/notifications"
-        element={<Navigate to="/alerts" replace />}
-      />
-      <Route
-        path="/reports"
-        element={
-          <ProtectedRoute>
-            <Reports />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <Settings />
-          </ProtectedRoute>
-        }
-      />
+      {/* Authenticated Application Shell with Persistent Layout & Outlet */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/products" element={<Products />} />
+        <Route path="/products/:id" element={<ProductDetail />} />
+        <Route path="/suppliers" element={<Navigate to="/products" replace />} />
+        <Route path="/purchases" element={<Purchases />} />
+        <Route path="/sales" element={<Navigate to="/purchases" replace />} />
+        <Route path="/market-prices" element={<MarketPrices />} />
+        <Route path="/ai-copilot" element={<AICopilot />} />
+        <Route
+          path="/ai-insights"
+          element={<Navigate to="/ai-copilot?tab=insights" replace />}
+        />
+        <Route
+          path="/chatbot"
+          element={<Navigate to="/ai-copilot?tab=chat" replace />}
+        />
+        <Route path="/alerts" element={<Notifications />} />
+        <Route
+          path="/notifications"
+          element={<Navigate to="/alerts" replace />}
+        />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/settings" element={<Settings />} />
+      </Route>
 
       {/* Catch-all redirect to / */}
       <Route path="*" element={<Navigate to="/" replace />} />
