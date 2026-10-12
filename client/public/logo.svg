@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 60" width="320" height="60">
+  <defs>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="60%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#123C35" />
+    </linearGradient>
+    <linearGradient id="barGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#e0f2fe" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
+  </defs>
+
+  <!-- Logo Icon Mark (Left) -->
+  <g transform="translate(6, 8)">
+    <rect x="0" y="0" width="44" height="44" rx="12" fill="url(#logoGrad)" />
+    <rect x="0" y="0" width="44" height="44" rx="12" fill="none" stroke="#34d399" stroke-width="1.2" stroke-opacity="0.4" />
+    
+    <!-- Analytics Rising Bars -->
+    <rect x="9" y="24" width="5.5" height="13" rx="2" fill="url(#barGrad)" opacity="0.9" />
+    <rect x="18" y="18" width="5.5" height="19" rx="2" fill="url(#barGrad)" opacity="0.95" />
+    <rect x="27" y="11" width="5.5" height="26" rx="2" fill="#ffffff" />
+
+    <!-- Trend Line & Intelligence Node -->
+    <path d="M7 26 L17 20 L27 13 L35 8" fill="none" stroke="#6ee7b7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="35" cy="8" r="2.5" fill="#ffffff" stroke="#059669" stroke-width="1.5" />
+    <path d="M35 3 Q35 6 38 6 Q35 6 35 9 Q35 6 32 6 Q35 6 35 3 Z" fill="#fbbf24" />
+  </g>
+
+  <!-- Brand Typography with Generous Spacing -->
+  <text x="62" y="33" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif" font-size="22" font-weight="800" fill="#0f172a">Market<tspan fill="#0284c7">Mind</tspan></text>
+  
+  <!-- AI Pill Badge (Comfortable 14px gap after text) -->
+  <g transform="translate(206, 16)">
+    <rect x="0" y="0" width="34" height="20" rx="10" fill="#e0f2fe" stroke="#38bdf8" stroke-width="1.2" />
+    <text x="17" y="14" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="800" fill="#0284c7" text-anchor="middle">AI</text>
+  </g>
+
+  <!-- Subtitle Tagline with Clear Tracking -->
+  <text x="63" y="48" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif" font-size="9" font-weight="600" fill="#64748b" letter-spacing="1.4">COMMODITY INTELLIGENCE</text>
+</svg>

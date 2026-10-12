@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="mmGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="50%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#123C35" />
+    </linearGradient>
+    <linearGradient id="barGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#e0f2fe" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Background Rounded Shield -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#mmGradient)" />
+  
+  <!-- Outer Ring Accent -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="none" stroke="#34d399" stroke-width="1.5" stroke-opacity="0.4" />
+
+  <!-- Rising Commodity Analytics Bars -->
+  <!-- Bar 1 -->
+  <rect x="14" y="34" width="8" height="16" rx="3" fill="url(#barGrad)" filter="url(#shadow)" opacity="0.9" />
+  <!-- Bar 2 -->
+  <rect x="26" y="26" width="8" height="24" rx="3" fill="url(#barGrad)" filter="url(#shadow)" opacity="0.95" />
+  <!-- Bar 3 -->
+  <rect x="38" y="16" width="8" height="34" rx="3" fill="#ffffff" filter="url(#shadow)" />
+
+  <!-- Trend Line with Glow -->
+  <path d="M12 36 L24 28 L36 20 L48 12" fill="none" stroke="#6ee7b7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="48" cy="12" r="3" fill="#ffffff" stroke="#059669" stroke-width="1.5" />
+
+  <!-- AI Intelligence Spark -->
+  <path d="M48 6 Q48 10 52 10 Q48 10 48 14 Q48 10 44 10 Q48 10 48 6 Z" fill="#fbbf24" />
+</svg>
