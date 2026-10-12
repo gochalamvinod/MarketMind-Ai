@@ -26,10 +26,10 @@ const loadRoute = (modulePath) => {
 
 const app = express();
 
-// Database Connection (initial trigger for local dev)
-if (!process.env.VERCEL) {
-  connectDB();
-}
+const initAdminUser = require('./config/initAdmin');
+
+// Database Connection
+connectDB().then(() => initAdminUser()).catch(() => {});
 
 // Core Middleware
 app.use(
@@ -53,19 +53,23 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Database connection assurance middleware (for serverless invocations)
+// Database connection assurance middleware (non-blocking for serverless)
 app.use(async (req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch (err) {
-    console.error('[DB Middleware] Connection failed:', err.message);
-    res.status(500).json({
-      success: false,
-      message: 'Database connection failed. Please verify MONGODB_URI and MongoDB Atlas Network Access (0.0.0.0/0).'
-    });
+  const mongoose = require('mongoose');
+  if (mongoose.connection.readyState !== 1) {
+    try {
+      await connectDB();
+      await initAdminUser();
+    } catch (err) {
+      console.warn('[DB Middleware] Connecting in resilient mode:', err.message);
+    }
+  } else {
+    initAdminUser().catch(() => {});
   }
+  next();
 });
+
+
 
 
 // Health Check Endpoint

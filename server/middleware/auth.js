@@ -23,7 +23,8 @@ const auth = (req, res, next) => {
       });
     }
 
-    const secret = process.env.JWT_SECRET || 'marketmind_ai_jwt_secret_dev_key_2026';
+    const JWT_SECRET = 'marketmind_ai_super_secret_jwt_key_telangana_2026';
+    const secret = process.env.JWT_SECRET || JWT_SECRET;
     const decoded = jwt.verify(token, secret);
 
     // Attach user payload (id, email, etc.)
