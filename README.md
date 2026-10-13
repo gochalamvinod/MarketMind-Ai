@@ -1,6 +1,6 @@
 # MarketMind AI — Smart Commodity Price Intelligence & Mandi ERP
 
-[![Deploy to Render](https://img.shields.io/badge/Deployed%20on-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://marketmind-ai-hbfp.onrender.com)
+[![Deploy to Render](https://img.shields.io/badge/Deployed%20on-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://marketmind-ai-6ni2.onrender.com)
 [![MongoDB Atlas](https://img.shields.io/badge/Database-MongoDB%20Atlas-47A248?style=for-the-badge&logo=mongodb)](https://www.mongodb.com/atlas)
 [![React 18](https://img.shields.io/badge/Frontend-React%2018%20%2B%20Vite-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
 [![Node Express](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-339933?style=for-the-badge&logo=node.js)](https://nodejs.org/)
@@ -12,7 +12,7 @@
 
 ## 🌟 Live Cloud Deployment
 
-- **Production URL**: [https://marketmind-ai-hbfp.onrender.com](https://marketmind-ai-hbfp.onrender.com)
+- **Production URL**: [https://marketmind-ai-6ni2.onrender.com](https://marketmind-ai-6ni2.onrender.com)
 - **Database Engine**: MongoDB Atlas Cloud Cluster
 - **Hosting Platform**: Render Cloud (Unified Full-Stack Express & React SPA Architecture)
 - **AI Intelligence**: Google Gemini AI (`gemini-3.5-flash-lite`) + Deterministic NLP Engine
