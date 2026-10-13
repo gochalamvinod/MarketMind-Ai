@@ -85,13 +85,34 @@ app.use('/api/chatbot', require('./routes/chatbot'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/admin', require('./routes/admin'));
 
-// 404 Route Handler for unmatched routes
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Cannot ${req.method} ${req.originalUrl}`
+const path = require('path');
+const fs = require('fs');
+
+// Serve Client Frontend Static Files (Single-deployment support on Render/Heroku/Vercel)
+const clientDistPath = path.join(__dirname, '../client/dist');
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+
+  app.get('*', (req, res) => {
+    // If it's an unhandled /api route, return standard 404 JSON
+    if (req.originalUrl.startsWith('/api')) {
+      return res.status(404).json({
+        success: false,
+        message: `Cannot ${req.method} ${req.originalUrl}`
+      });
+    }
+    // Otherwise serve React SPA entrypoint
+    res.sendFile(path.join(clientDistPath, 'index.html'));
   });
-});
+} else {
+  // 404 Route Handler for unmatched routes when frontend is not built
+  app.use('*', (req, res) => {
+    res.status(404).json({
+      success: false,
+      message: `Cannot ${req.method} ${req.originalUrl}`
+    });
+  });
+}
 
 // Global Centralized Error Handler Middleware
 app.use(errorHandler);
