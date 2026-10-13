@@ -29,7 +29,7 @@ The platform includes a dedicated **Infrastructure & Platform Manager** role:
 |---|---|
 | **Role** | System Administrator (Manager Console) |
 | **Email** | `admin@marketmind.ai` |
-| **Password** | `Vinod@807465` |
+| **Password** | `*********` |
 | **Console Access** | User Management, MongoDB Atlas Metrics, API Key Configuration, Cache Management |
 
 > **Note on Role Separation:** The `admin` role is the infrastructure manager, not a retail shopkeeper. To test retail store workflows, sales, purchases, catalog management, and the conversational AI Copilot, register a merchant account via `/register` or sign in with any merchant credentials.
