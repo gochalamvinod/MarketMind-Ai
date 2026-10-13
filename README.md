@@ -12,7 +12,7 @@
 
 ## 🌟 Live Demo & Cloud Deployment
 
-- **Live Production URL**: [https://marketmind-ai-new.vercel.app](https://marketmind-ai-new.vercel.app)
+- **Live Production URL**: [https://marketmind-ai-new.vercel.app](https://marketmind-ai-6ni2.onrender.com/)
 - **Database Engine**: MongoDB Atlas Cloud Cluster
 - **Backend Architecture**: Serverless Express on Vercel with RESTful API architecture
 
