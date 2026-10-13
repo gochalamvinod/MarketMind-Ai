@@ -32,7 +32,6 @@ import {
 } from '../services/api'
 import { formatCurrency, formatDate, formatDateTime } from '../utils/helpers'
 import LoadingSpinner from '../components/common/LoadingSpinner'
-import DemoBadge from '../components/common/DemoBadge'
 import PriceChangeIndicator from '../components/common/PriceChangeIndicator'
 
 /**
@@ -187,7 +186,6 @@ const MarketPrices = () => {
         <div>
           <div className="d-flex align-items-center gap-2">
             <h2 className="h3 fw-bold text-dark mb-0">Market Prices & Mandi Intelligence</h2>
-            <DemoBadge visible={isDemo} />
           </div>
           <p className="text-muted small mb-0 mt-1">
             Official AGMARKNET wholesale reference rates vs. your actual inventory purchase costs

@@ -28,7 +28,6 @@ import { formatCurrency, formatDate, formatDateTime } from '../utils/helpers'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import StockStatus from '../components/common/StockStatus'
 import PriceChangeIndicator from '../components/common/PriceChangeIndicator'
-import DemoBadge from '../components/common/DemoBadge'
 
 /**
  * Product Details Page (/products/:id)
@@ -110,7 +109,6 @@ const ProductDetail = () => {
           <div className="d-flex align-items-center gap-2">
             <h2 className="h3 fw-bold text-dark mb-0">{product.name}</h2>
             <StockStatus quantity={product.stockQuantity} minLevel={product.minStockLevel} />
-            {product.priceSource === 'DEMO' && <DemoBadge visible />}
           </div>
           <p className="text-muted small mb-0 mt-1">
             Category: <strong className="text-dark">{product.category}</strong> | Variety/Grade: <strong className="text-dark">{product.variety || 'Standard'}</strong> | Unit: <strong className="text-dark">{product.unit}</strong>

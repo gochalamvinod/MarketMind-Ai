@@ -8,11 +8,17 @@ import {
   BsBell,
   BsFileText,
   BsGear,
-  BsX
+  BsX,
+  BsDatabase,
+  BsPeopleFill,
+  BsKeyFill,
+  BsShieldCheck
 } from 'react-icons/bs'
+import { useAuth } from '../../context/AuthContext'
 import { getUnreadCount } from '../../services/api'
 
-const navItems = [
+// Navigation items for regular store merchants
+const userNavItems = [
   { name: 'Dashboard', path: '/', icon: BsSpeedometer2 },
   { name: 'Products', path: '/products', icon: BsBox },
   { name: 'Purchases', path: '/purchases', icon: BsCartPlus },
@@ -22,15 +28,32 @@ const navItems = [
   { name: 'Settings', path: '/settings', icon: BsGear }
 ]
 
+// Navigation items for platform admin (manager)
+const adminNavItems = [
+  { name: 'Dashboard', path: '/', icon: BsSpeedometer2 },
+  { name: 'Users', path: '/admin/users', icon: BsPeopleFill },
+  { name: 'Database', path: '/admin/database', icon: BsDatabase },
+  { name: 'API Keys', path: '/admin/api-keys', icon: BsKeyFill },
+  { name: 'Settings', path: '/settings', icon: BsGear }
+]
+
 /**
  * Sidebar navigation component
+ * Shows different nav items based on user role (admin vs merchant)
  * @param {{ mobileOpen?: boolean, onCloseMobile?: () => void }} props
  */
 const Sidebar = ({ mobileOpen, onCloseMobile }) => {
   const location = useLocation()
+  const { user } = useAuth()
   const [unreadAlerts, setUnreadAlerts] = useState(0)
 
+  const isAdmin = user?.role === 'admin'
+  const navItems = isAdmin ? adminNavItems : userNavItems
+
   useEffect(() => {
+    // Only poll alerts for non-admin users
+    if (isAdmin) return
+
     const fetchUnread = async () => {
       try {
         const res = await getUnreadCount()
@@ -41,7 +64,7 @@ const Sidebar = ({ mobileOpen, onCloseMobile }) => {
     fetchUnread()
     const interval = setInterval(fetchUnread, 30000)
     return () => clearInterval(interval)
-  }, [location.pathname])
+  }, [location.pathname, isAdmin])
 
   return (
     <>
@@ -82,7 +105,7 @@ const Sidebar = ({ mobileOpen, onCloseMobile }) => {
             <span className="fw-bold fs-6 text-white tracking-tight">MarketMind <span className="badge bg-success-subtle text-success border border-success-subtle" style={{ fontSize: '0.62rem' }}>AI</span></span>
           </div>
           <div className="small text-uppercase text-light fw-medium tracking-wider" style={{ opacity: 0.65, fontSize: '0.68rem', letterSpacing: '0.08em' }}>
-            Telangana Agri Intelligence
+            {isAdmin ? 'Platform Administration' : 'Telangana Agri Intelligence'}
           </div>
         </div>
 
@@ -109,7 +132,7 @@ const Sidebar = ({ mobileOpen, onCloseMobile }) => {
                   >
                     <Icon className="fs-5 flex-shrink-0" />
                     <span className="nav-text fw-medium">{item.name}</span>
-                    {item.path === '/alerts' && unreadAlerts > 0 && (
+                    {item.path === '/alerts' && !isAdmin && unreadAlerts > 0 && (
                       <span className="badge bg-danger rounded-pill ms-auto px-2 py-1" style={{ fontSize: '0.68rem' }}>
                         {unreadAlerts}
                       </span>

@@ -134,4 +134,13 @@ export const getAdminSystemStatus = () => api.get('/settings/admin-system')
 export const flushCache = () => api.post('/settings/admin-system/flush-cache')
 export const purgeNonAdminData = () => api.post('/settings/admin-system/purge-data')
 
+/* ==========================================================================
+   ADMIN API (Platform Manager)
+   ========================================================================== */
+export const getAdminUsers = () => api.get('/admin/users')
+export const deleteAdminUser = (id) => api.delete(`/admin/users/${id}`)
+export const getAdminDatabase = () => api.get('/admin/database')
+export const getAdminApiKeys = () => api.get('/admin/api-keys')
+export const updateAdminApiKeys = (data) => api.put('/admin/api-keys', data)
+
 export default api

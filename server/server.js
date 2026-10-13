@@ -11,9 +11,13 @@ const { isDemoMode } = require('./utils/helpers');
 const app = express();
 
 const initAdminUser = require('./config/initAdmin');
+const { seedMarketPrices } = require('./config/seedMarketPrices');
 
 // Database Connection
-connectDB().then(() => initAdminUser()).catch(() => {});
+connectDB().then(async () => {
+  await initAdminUser();
+  await seedMarketPrices();
+}).catch(() => {});
 
 // Core Middleware
 app.use(
@@ -79,6 +83,7 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/chatbot', require('./routes/chatbot'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/admin', require('./routes/admin'));
 
 // 404 Route Handler for unmatched routes
 app.use('*', (req, res) => {

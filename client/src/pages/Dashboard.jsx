@@ -31,7 +31,6 @@ import {
 import { getDashboard, fetchPricesNow, seedDemoData } from '../services/api'
 import { formatCurrency, formatDate, formatDateTime } from '../utils/helpers'
 import LoadingSpinner from '../components/common/LoadingSpinner'
-import DemoBadge from '../components/common/DemoBadge'
 import StockStatus from '../components/common/StockStatus'
 import PriceChangeIndicator from '../components/common/PriceChangeIndicator'
 
@@ -118,7 +117,6 @@ const Dashboard = () => {
         <div>
           <div className="d-flex align-items-center gap-2">
             <h2 className="h3 fw-bold text-dark mb-0">Dashboard</h2>
-            <DemoBadge visible={Boolean(isDemo)} />
           </div>
           <p className="text-muted small mb-0 mt-1">
             Real-time wholesale operations & mandi reference tracking

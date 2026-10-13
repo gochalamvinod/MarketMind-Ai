@@ -80,10 +80,13 @@ const FloatingChatbot = () => {
   ])
 
   const chatEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
   const inputRef = useRef(null)
 
   const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
   }
 
   useEffect(() => {
@@ -286,6 +289,7 @@ const FloatingChatbot = () => {
 
           {/* Messages Feed */}
           <div
+            ref={messagesContainerRef}
             className="flex-grow-1 p-3 overflow-y-auto custom-chat-scroll"
             style={{ backgroundColor: '#f8fafc', fontSize: '0.88rem' }}
           >

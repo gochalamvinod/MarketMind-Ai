@@ -121,10 +121,13 @@ const Chatbot = ({ isEmbedded = false }) => {
   ])
 
   const chatEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
   const inputRef = useRef(null)
 
   const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
   }
 
   useEffect(() => {
@@ -297,6 +300,7 @@ const Chatbot = ({ isEmbedded = false }) => {
           >
             {/* Chat Messages Feed */}
             <div
+              ref={messagesContainerRef}
               className="flex-grow-1 p-3 p-md-4 overflow-y-auto custom-chat-scroll"
               style={{ backgroundColor: '#f8fafc', fontSize: '0.92rem' }}
             >

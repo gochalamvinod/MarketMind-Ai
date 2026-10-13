@@ -10,7 +10,6 @@ import {
 } from 'react-icons/bs'
 import { useAuth } from '../../context/AuthContext'
 import NotificationBell from '../notifications/NotificationBell'
-import DemoBadge from '../common/DemoBadge'
 import { getApiStatus } from '../../services/api'
 
 /**
@@ -65,15 +64,17 @@ const Navbar = ({ onToggleSidebar }) => {
 
         {/* Right: Notifications & User profile */}
         <div className="d-flex align-items-center gap-2 gap-md-3">
-          <Link
-            to="/ai-copilot?tab=chat"
-            className="btn btn-outline-success btn-sm rounded-pill d-none d-sm-inline-flex align-items-center gap-1 py-1 px-2 border-opacity-50 text-decoration-none shadow-2xs"
-            title="Open MarketMind AI Copilot"
-            style={{ fontSize: '0.82rem' }}
-          >
-            <BsRobot size={14} />
-            <span className="fw-semibold">AI Copilot</span>
-          </Link>
+          {user?.role !== 'admin' && (
+            <Link
+              to="/ai-copilot?tab=chat"
+              className="btn btn-outline-success btn-sm rounded-pill d-none d-sm-inline-flex align-items-center gap-1 py-1 px-2 border-opacity-50 text-decoration-none shadow-2xs"
+              title="Open MarketMind AI Copilot"
+              style={{ fontSize: '0.82rem' }}
+            >
+              <BsRobot size={14} />
+              <span className="fw-semibold">AI Copilot</span>
+            </Link>
+          )}
 
           <NotificationBell />
 
