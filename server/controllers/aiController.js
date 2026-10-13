@@ -365,9 +365,14 @@ const getRecommendations = async (req, res) => {
   }
 };
 
+const flushAiCache = () => {
+  aiCache.clear();
+};
+
 module.exports = {
   getInsights,
   getProductAnalysis,
   getForecast,
-  getRecommendations
+  getRecommendations,
+  flushAiCache
 };

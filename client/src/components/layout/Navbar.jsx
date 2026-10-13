@@ -57,22 +57,14 @@ const Navbar = ({ onToggleSidebar }) => {
             <BsList className="fs-4" />
           </button>
 
+          {/* Brand */}
           <Link to="/" className="navbar-brand d-flex align-items-center m-0 text-decoration-none py-0">
             <img src="/logo.svg" alt="MarketMind AI" height="36" className="d-inline-block" />
           </Link>
-
-          {/* Demo Badge on Navbar */}
-          <div className="ms-2 d-none d-md-block">
-            <DemoBadge visible={isDemo} />
-          </div>
         </div>
 
         {/* Right: Notifications & User profile */}
         <div className="d-flex align-items-center gap-2 gap-md-3">
-          <div className="d-block d-md-none">
-            <DemoBadge visible={isDemo} />
-          </div>
-
           <Link
             to="/ai-copilot?tab=chat"
             className="btn btn-outline-success btn-sm rounded-pill d-none d-sm-inline-flex align-items-center gap-1 py-1 px-2 border-opacity-50 text-decoration-none shadow-2xs"
@@ -94,14 +86,14 @@ const Navbar = ({ onToggleSidebar }) => {
               aria-expanded={userMenuOpen}
             >
               <div className="user-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold">
-                {user?.name ? user.name.charAt(0).toUpperCase() : <BsPersonCircle className="fs-5" />}
+                {user?.role === 'admin' ? 'A' : user?.name ? user.name.charAt(0).toUpperCase() : <BsPersonCircle className="fs-5" />}
               </div>
               <div className="d-none d-sm-block text-start lh-1 me-1">
-                <span className="d-block fw-semibold text-dark small" style={{ maxWidth: '120px' }}>
-                  {user?.name || 'User'}
+                <span className="d-block fw-semibold text-dark small" style={{ maxWidth: '140px' }}>
+                  {user?.role === 'admin' ? 'Administrator' : user?.name || 'User'}
                 </span>
                 <span className="d-block text-muted" style={{ fontSize: '0.72rem' }}>
-                  {user?.businessName || user?.role || 'Admin'}
+                  {user?.role === 'admin' ? 'Master Admin' : user?.businessName || 'Store Owner'}
                 </span>
               </div>
             </button>
@@ -109,16 +101,22 @@ const Navbar = ({ onToggleSidebar }) => {
             {userMenuOpen && (
               <div
                 className="dropdown-menu dropdown-menu-end show shadow-lg border-0 mt-2 py-2"
-                style={{ minWidth: '200px', position: 'absolute', right: 0, zIndex: 1050 }}
+                style={{ minWidth: '220px', position: 'absolute', right: 0, zIndex: 1050 }}
               >
                 <div className="px-3 py-2 border-bottom">
-                  <p className="mb-0 fw-semibold text-dark small">{user?.name || 'Administrator'}</p>
-                  <p className="mb-0 text-muted small text-truncate">{user?.email || 'user@example.com'}</p>
-                  {user?.businessName && (
+                  <p className="mb-0 fw-semibold text-dark small">
+                    {user?.role === 'admin' ? 'System Administrator' : user?.name || 'Merchant'}
+                  </p>
+                  <p className="mb-0 text-muted small text-truncate">{user?.email || 'admin@marketmind.ai'}</p>
+                  {user?.role === 'admin' ? (
+                    <span className="badge bg-primary-subtle text-primary border border-primary-subtle small mt-1">
+                      Platform Master Admin
+                    </span>
+                  ) : user?.businessName ? (
                     <span className="badge bg-secondary-subtle text-secondary small mt-1">
                       {user.businessName}
                     </span>
-                  )}
+                  ) : null}
                 </div>
 
                 <Link

@@ -130,5 +130,8 @@ export const sendChatMessage = (message, history = []) => api.post('/chatbot', {
    ========================================================================== */
 export const getSettings = () => api.get('/settings')
 export const updateSettings = (data) => api.put('/settings', data)
+export const getAdminSystemStatus = () => api.get('/settings/admin-system')
+export const flushCache = () => api.post('/settings/admin-system/flush-cache')
+export const purgeNonAdminData = () => api.post('/settings/admin-system/purge-data')
 
 export default api

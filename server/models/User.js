@@ -32,23 +32,45 @@ const userSchema = new mongoose.Schema(
       minlength: [6, 'Password must be at least 6 characters long'],
       select: false
     },
+    firstName: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    lastName: {
+      type: String,
+      trim: true,
+      default: ''
+    },
     businessName: {
       type: String,
-      default: 'My Grocery Business',
-      trim: true
+      trim: true,
+      default: ''
     },
     phone: {
       type: String,
-      trim: true
+      trim: true,
+      default: ''
     },
     address: {
       type: String,
-      trim: true
+      trim: true,
+      default: ''
+    },
+    city: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    state: {
+      type: String,
+      trim: true,
+      default: ''
     },
     role: {
       type: String,
       enum: ['admin', 'user'],
-      default: 'admin'
+      default: 'user'
     }
   },
   {

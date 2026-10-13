@@ -57,7 +57,9 @@ body {
   min-width: var(--sidebar-width);
   background: linear-gradient(180deg, #123c35 0%, #0a241f 100%) !important;
   color: #ffffff !important;
-  min-height: 100vh;
+  height: 100vh;
+  position: sticky;
+  top: 0;
   display: flex;
   flex-direction: column;
   border-right: 1px solid rgba(255, 255, 255, 0.08);

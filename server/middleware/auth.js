@@ -5,7 +5,9 @@ const jwt = require('jsonwebtoken');
  * Header format: Authorization: Bearer <token>
  * Attaches decoded user payload { id, ... } to req.user
  */
-const auth = (req, res, next) => {
+const User = require('../models/User');
+
+const auth = async (req, res, next) => {
   try {
     let token;
 
@@ -27,11 +29,24 @@ const auth = (req, res, next) => {
     const secret = process.env.JWT_SECRET || JWT_SECRET;
     const decoded = jwt.verify(token, secret);
 
-    // Attach user payload (id, email, etc.)
+    // Attach user payload (id, email, role, etc.)
     req.user = {
       id: decoded.id || decoded._id,
       ...decoded
     };
+
+    // If role is missing from token, populate from database
+    if (!req.user.role && req.user.id) {
+      try {
+        const dbUser = await User.findById(req.user.id).select('role email name businessName');
+        if (dbUser) {
+          req.user.role = dbUser.role || 'user';
+          req.user.email = dbUser.email;
+        }
+      } catch (dbErr) {
+        // Continue with decoded user if db lookup fails
+      }
+    }
 
     next();
   } catch (error) {

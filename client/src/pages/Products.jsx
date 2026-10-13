@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import {
@@ -83,6 +83,20 @@ const Products = () => {
     purchaseCost: 0
   }
   const [formData, setFormData] = useState(initialFormState)
+  const modalBodyRef = useRef(null)
+  const nameInputRef = useRef(null)
+
+  useEffect(() => {
+    if (showModal) {
+      const timer = setTimeout(() => {
+        if (modalBodyRef.current) {
+          modalBodyRef.current.scrollTop = 0
+        }
+        nameInputRef.current?.focus()
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [showModal])
 
   const fetchData = useCallback(async () => {
     try {
@@ -185,7 +199,11 @@ const Products = () => {
     e.preventDefault()
 
     if (!formData.name.trim()) {
-      toast.error('Product name is required')
+      toast.error('Product Name is required (please fill in the commodity name at the top)')
+      if (modalBodyRef.current) {
+        modalBodyRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+      setTimeout(() => nameInputRef.current?.focus(), 100)
       return
     }
 
@@ -491,9 +509,9 @@ const Products = () => {
           tabIndex="-1"
           style={{ backgroundColor: 'rgba(15, 23, 42, 0.65)', zIndex: 1050 }}
         >
-          <div className="modal-dialog modal-lg modal-dialog-centered" style={{ maxHeight: '92vh' }}>
-            <div className="modal-content shadow-lg border-0 rounded-3 d-flex flex-column" style={{ maxHeight: '90vh' }}>
-              <div className="modal-header border-bottom bg-white" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div className="modal-content shadow-lg border-0 rounded-3">
+              <div className="modal-header border-bottom bg-white py-3">
                 <h5 className="modal-title fw-bold text-dark">
                   {isEditing ? `Edit Product: ${formData.name}` : 'Add New Commodity Product'}
                 </h5>
@@ -503,13 +521,14 @@ const Products = () => {
                   onClick={() => setShowModal(false)}
                 ></button>
               </div>
-              <form onSubmit={handleSubmitProduct} className="d-flex flex-column flex-grow-1 overflow-hidden" style={{ minHeight: 0 }}>
-                <div className="modal-body p-4" style={{ overflowY: 'auto', flex: '1 1 auto' }}>
+              <form onSubmit={handleSubmitProduct} className="d-flex flex-column" style={{ minHeight: 0 }}>
+                <div ref={modalBodyRef} className="modal-body p-4" style={{ overflowY: 'auto' }}>
                   <div className="row g-3">
                     {/* Basic Info */}
                     <div className="col-12 col-md-6">
                       <label className="form-label fw-semibold small">Product Name *</label>
                       <input
+                        ref={nameInputRef}
                         type="text"
                         name="name"
                         className="form-control"
@@ -697,7 +716,7 @@ const Products = () => {
                   </div>
                 </div>
 
-                <div className="modal-footer border-top bg-light px-4 py-3" style={{ position: 'sticky', bottom: 0, zIndex: 10 }}>
+                <div className="modal-footer border-top bg-light px-4 py-3">
                   <button
                     type="button"
                     className="btn btn-outline-secondary px-3"

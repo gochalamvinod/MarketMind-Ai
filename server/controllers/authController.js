@@ -12,10 +12,10 @@ const JWT_SECRET = 'marketmind_ai_super_secret_jwt_key_telangana_2026';
  * @param {string} id - User ID
  * @returns {string} JWT Token
  */
-const generateToken = (id) => {
+const generateToken = (id, role = 'user') => {
   const secret = process.env.JWT_SECRET || JWT_SECRET;
   const expiresIn = process.env.JWT_EXPIRE || '7d';
-  return jwt.sign({ id }, secret, { expiresIn });
+  return jwt.sign({ id, role }, secret, { expiresIn });
 };
 
 /**
@@ -245,7 +245,7 @@ const login = async (req, res) => {
       });
     }
 
-    const token = generateToken(user._id);
+    const token = generateToken(user._id, user.role || 'user');
 
     return res.status(200).json({
       success: true,

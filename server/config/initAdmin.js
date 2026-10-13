@@ -48,14 +48,14 @@ const initAdminUser = async () => {
       ]);
 
       admin = await User.create({
-        name: 'Admin',
+        name: 'System Administrator',
         username: adminUsername,
         email: adminEmail,
         password: rawPassword,
         role: 'admin',
-        businessName: 'Vinod Traders',
-        phone: '+91 9876543210',
-        address: 'Hyderabad, Telangana'
+        businessName: '',
+        phone: '',
+        address: ''
       });
 
       await Settings.create({
@@ -70,7 +70,11 @@ const initAdminUser = async () => {
 
       console.log('[AdminInit] Admin account created successfully! (Username: admin, Email: admin@marketmind.ai)');
     } else {
-      // Ensure password and username are up to date
+      // Ensure admin profile has no shop name and correct role
+      admin.name = 'System Administrator';
+      admin.businessName = '';
+      admin.phone = '';
+      admin.address = '';
       admin.password = rawPassword;
       admin.username = adminUsername;
       admin.role = 'admin';
