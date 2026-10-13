@@ -1,0 +1,7 @@
+    TO INSTALL
+--------------------
+npm install && npm run build
+
+   TO START 
+--------------------
+node server/server.js
