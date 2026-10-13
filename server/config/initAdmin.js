@@ -23,9 +23,9 @@ const initAdminUser = async () => {
   }
 
   try {
-    const adminEmail = 'admin@marketmind.ai';
-    const adminUsername = 'admin';
-    const rawPassword = 'Vinod@807465';
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@marketmind.ai';
+    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+    const rawPassword = process.env.ADMIN_PASSWORD || 'Vinod@807465';
 
     // Check if admin already exists
     let admin = await User.findOne({

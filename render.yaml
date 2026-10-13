@@ -1,0 +1,66 @@
+# ==============================================================================
+# MarketMind AI - Render Blueprint Deployment Specification
+# https://render.com/docs/blueprint-spec
+# ==============================================================================
+
+services:
+  # ── Backend API Web Service (Node.js Express) ──
+  - type: web
+    name: marketmind-ai-backend
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRE
+        value: 7d
+      - key: ADMIN_NAME
+        value: System Administrator
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_EMAIL
+        value: admin@marketmind.ai
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GOV_API_RESOURCE_ID
+        value: 9ef84268-d588-465a-a308-a864a43d0070
+      - key: GOV_API_BASE_URL
+        value: https://api.data.gov.in/resource
+      - key: PRICE_CHECK_INTERVAL
+        value: 6h
+      - key: DEFAULT_STATE
+        value: Telangana
+      - key: DEFAULT_MARKET
+        value: Hyderabad
+      - key: ALERT_THRESHOLD
+        value: 5
+      - key: TARGET_MARGIN
+        value: 10
+
+  # ── Frontend Static Site (React Vite SPA) ──
+  - type: web
+    name: marketmind-ai-frontend
+    runtime: static
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: marketmind-ai-backend
+          property: host
