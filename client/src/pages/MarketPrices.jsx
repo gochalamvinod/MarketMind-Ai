@@ -192,7 +192,7 @@ const MarketPrices = () => {
           </p>
         </div>
 
-        <div className="d-flex align-items-center gap-2">
+        <div className="d-flex flex-wrap align-items-center gap-2">
           <button
             className="btn btn-outline-primary btn-sm d-flex align-items-center gap-2 shadow-sm"
             onClick={() => setShowManualModal(true)}

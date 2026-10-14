@@ -21,7 +21,7 @@ const AICopilot = () => {
       {/* Hub Navigation Tabs */}
       <div className="card border-0 shadow-sm rounded-3 mb-4">
         <div className="card-body p-2 bg-light rounded-3">
-          <ul className="nav nav-pills nav-fill gap-2">
+          <ul className="nav nav-pills flex-column flex-sm-row nav-fill gap-2">
             <li className="nav-item">
               <button
                 type="button"

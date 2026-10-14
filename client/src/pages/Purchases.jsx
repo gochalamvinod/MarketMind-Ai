@@ -307,8 +307,8 @@ const Purchases = () => {
         <div className="card-header bg-white border-bottom p-3">
           <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
             <h5 className="fw-bold text-dark mb-0">Purchase History & Procurement Log</h5>
-            <div className="d-flex flex-wrap align-items-center gap-2">
-              <div className="input-group input-group-sm" style={{ width: '220px' }}>
+            <div className="d-flex flex-wrap align-items-center gap-2 w-100 w-md-auto mt-2 mt-md-0">
+              <div className="input-group input-group-sm flex-grow-1" style={{ minWidth: '160px', maxWidth: '240px' }}>
                 <span className="input-group-text bg-white"><BsSearch /></span>
                 <input
                   type="text"
@@ -321,7 +321,7 @@ const Purchases = () => {
               <input
                 type="date"
                 className="form-control form-control-sm"
-                style={{ width: '140px' }}
+                style={{ minWidth: '125px', flex: '1 1 auto' }}
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 title="Start Date"
@@ -329,7 +329,7 @@ const Purchases = () => {
               <input
                 type="date"
                 className="form-control form-control-sm"
-                style={{ width: '140px' }}
+                style={{ minWidth: '125px', flex: '1 1 auto' }}
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 title="End Date"

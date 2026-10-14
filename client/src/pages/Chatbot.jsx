@@ -243,8 +243,8 @@ const Chatbot = ({ isEmbedded = false }) => {
       </div>
 
       <div className="row g-4">
-        {/* Left Column: Command Center Cheatsheet */}
-        <div className="col-12 col-lg-4">
+        {/* Left Column: Command Center Cheatsheet (Order 2 on mobile, 1 on desktop) */}
+        <div className="col-12 col-lg-4 order-2 order-lg-1">
           <div className="card border-0 shadow-sm rounded-4 p-3 mb-3 bg-white">
             <h6 className="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
               <BsLightbulb className="text-warning fs-5" />
@@ -292,8 +292,8 @@ const Chatbot = ({ isEmbedded = false }) => {
           </div>
         </div>
 
-        {/* Right Column: Full Conversational Chat Window */}
-        <div className="col-12 col-lg-8">
+        {/* Right Column: Full Conversational Chat Window (Order 1 on mobile, 2 on desktop) */}
+        <div className="col-12 col-lg-8 order-1 order-lg-2">
           <div
             className="card border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column"
             style={{ height: '720px', backgroundColor: '#ffffff' }}

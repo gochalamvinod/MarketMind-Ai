@@ -78,8 +78,8 @@ const Sidebar = ({ mobileOpen, onCloseMobile }) => {
       )}
 
       <aside
-        className={`app-sidebar d-flex flex-column text-white ${
-          mobileOpen ? 'sidebar-mobile-show' : ''
+        className={`app-sidebar flex-column text-white ${
+          mobileOpen ? 'd-flex sidebar-mobile-show' : 'd-none d-lg-flex'
         }`}
       >
         {/* Mobile Header */}
@@ -90,11 +90,15 @@ const Sidebar = ({ mobileOpen, onCloseMobile }) => {
           </div>
           <button
             type="button"
-            className="btn btn-sm btn-outline-light border-0 p-1"
-            onClick={onCloseMobile}
-            aria-label="Close menu"
+            className="btn btn-sm btn-light bg-white bg-opacity-25 text-white border-0 p-1 rounded-2 d-flex align-items-center justify-content-center"
+            style={{ width: '36px', height: '36px' }}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (onCloseMobile) onCloseMobile()
+            }}
+            aria-label="Close navigation menu"
           >
-            <BsX className="fs-3" />
+            <BsX size={26} />
           </button>
         </div>
 

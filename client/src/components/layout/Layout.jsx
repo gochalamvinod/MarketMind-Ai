@@ -36,7 +36,7 @@ const Layout = ({ children }) => {
       <div className="main-wrapper d-flex flex-column flex-grow-1 min-vh-100">
         <Navbar onToggleSidebar={handleToggleSidebar} />
 
-        <main className="content-area flex-grow-1 p-3 p-md-4">
+        <main className="content-area flex-grow-1 p-0">
           <div className="container-fluid px-0">
             {children || <Outlet />}
           </div>

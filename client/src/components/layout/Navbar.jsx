@@ -49,11 +49,12 @@ const Navbar = ({ onToggleSidebar }) => {
         <div className="d-flex align-items-center gap-2 gap-lg-3">
           <button
             type="button"
-            className="btn btn-light d-lg-none p-2 border-0 shadow-none text-dark"
+            className="btn btn-light d-lg-none p-0 d-flex align-items-center justify-content-center border rounded-3 text-dark shadow-2xs"
             onClick={onToggleSidebar}
             aria-label="Toggle navigation sidebar"
+            style={{ width: '40px', height: '40px', borderColor: '#dce5df', backgroundColor: '#f8faf9' }}
           >
-            <BsList className="fs-4" />
+            <BsList size={22} className="text-dark" />
           </button>
 
           {/* Brand */}
@@ -102,7 +103,7 @@ const Navbar = ({ onToggleSidebar }) => {
             {userMenuOpen && (
               <div
                 className="dropdown-menu dropdown-menu-end show shadow-lg border-0 mt-2 py-2"
-                style={{ minWidth: '220px', position: 'absolute', right: 0, zIndex: 1050 }}
+                style={{ minWidth: '220px', maxWidth: 'calc(100vw - 24px)', position: 'absolute', right: 0, zIndex: 1050 }}
               >
                 <div className="px-3 py-2 border-bottom">
                   <p className="mb-0 fw-semibold text-dark small">

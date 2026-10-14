@@ -1,0 +1,7 @@
+=>  STEP-1
+        TO INSTALL
+npm install && npm run build
+_____________________________________
+=>   STEP-2
+       TO START 
+node server/server.js
