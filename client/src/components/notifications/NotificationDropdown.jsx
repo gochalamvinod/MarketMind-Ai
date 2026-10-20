@@ -68,7 +68,9 @@ const NotificationDropdown = ({ isOpen, onClose, onAlertsUpdated }) => {
     try {
       setLoading(true)
       const res = await getAlerts()
-      const list = Array.isArray(res.data) ? res.data : res.data?.alerts || []
+      const list = Array.isArray(res.data)
+        ? res.data
+        : res.data?.data || res.data?.alerts || []
       setAlerts(list.slice(0, 10))
     } catch (err) {
       console.error('Failed to fetch alerts in dropdown:', err)
@@ -199,7 +201,7 @@ const NotificationDropdown = ({ isOpen, onClose, onAlertsUpdated }) => {
           className="btn btn-sm btn-link text-decoration-none w-100 fw-semibold text-primary"
           onClick={onClose}
         >
-          View All Alerts →
+          View All Mandi & Stock Alerts →
         </Link>
       </div>
     </div>

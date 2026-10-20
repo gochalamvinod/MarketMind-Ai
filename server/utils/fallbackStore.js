@@ -16,18 +16,24 @@ class FallbackStore {
   }
 
   async initDefaultData() {
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('Vinod@807465', salt);
+    const adminPassword = process.env.ADMIN_PASSWORD || 'Vinod@807465';
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@marketmind.ai';
+    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+    const adminName = process.env.ADMIN_NAME || 'System Administrator';
+    const defaultBusinessName = process.env.DEFAULT_BUSINESS_NAME || 'Vinod Traders';
 
-    // Only Admin Account on Launch
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(adminPassword, salt);
+
+    // Default Administrator / Merchant Account on Launch
     const adminUser = {
       _id: '6accb03ccb1432144d0291fe',
       id: '6accb03ccb1432144d0291fe',
-      name: 'Admin',
-      username: 'admin',
-      email: 'admin@marketmind.ai',
+      name: adminName,
+      username: adminUsername,
+      email: adminEmail,
       password: hashedPassword,
-      businessName: 'Vinod Traders',
+      businessName: defaultBusinessName,
       phone: '+91 9876543210',
       address: 'Hyderabad, Telangana',
       role: 'admin',

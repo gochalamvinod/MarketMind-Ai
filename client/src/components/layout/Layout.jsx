@@ -1,20 +1,15 @@
 import React, { useState } from 'react'
 import { Outlet } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
 import Navbar from './Navbar'
 import Sidebar from './Sidebar'
 import FloatingChatbot from '../chat/FloatingChatbot'
 
 /**
- * Layout wrapper for authenticated pages
- * Hides FloatingChatbot for admin users (admin is platform manager, not a merchant)
+ * Clean Layout wrapper for authenticated pages with persistent Floating Chatbot
  * @param {{ children?: React.ReactNode }} props
  */
 const Layout = ({ children }) => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const { user } = useAuth()
-
-  const isAdmin = user?.role === 'admin'
 
   const handleToggleSidebar = () => {
     setMobileSidebarOpen((prev) => !prev)
@@ -25,7 +20,7 @@ const Layout = ({ children }) => {
   }
 
   return (
-    <div className="app-container d-flex min-vh-100">
+    <div className="app-container">
       {/* Sidebar Navigation */}
       <Sidebar
         mobileOpen={mobileSidebarOpen}
@@ -33,18 +28,18 @@ const Layout = ({ children }) => {
       />
 
       {/* Main Content Area */}
-      <div className="main-wrapper d-flex flex-column flex-grow-1 min-vh-100">
+      <div className="main-wrapper">
         <Navbar onToggleSidebar={handleToggleSidebar} />
 
-        <main className="content-area flex-grow-1 p-0">
+        <main className="content-area">
           <div className="container-fluid px-0">
             {children || <Outlet />}
           </div>
         </main>
       </div>
 
-      {/* Floating Interactive AI Copilot Widget — only for merchants, not admin */}
-      {!isAdmin && <FloatingChatbot />}
+      {/* Persistent Floating AI Chatbot */}
+      <FloatingChatbot />
     </div>
   )
 }

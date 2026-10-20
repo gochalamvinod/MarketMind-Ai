@@ -484,6 +484,7 @@ const Notifications = () => {
                     <label className="form-label fw-semibold small">Alert Title *</label>
                     <input
                       type="text"
+                      name="title"
                       className="form-control"
                       placeholder="e.g. Rice Price Dip Trigger"
                       value={formData.title}
@@ -499,6 +500,7 @@ const Notifications = () => {
                       <input
                         type="number"
                         step="0.01"
+                        name="targetPrice"
                         className="form-control"
                         placeholder="e.g. 38.00"
                         value={formData.targetPrice}

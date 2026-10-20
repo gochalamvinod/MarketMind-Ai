@@ -4,10 +4,8 @@ import {
   BsDashLg,
   BsSendFill,
   BsTrash,
-  BsCheckCircleFill,
-  BsArrowsFullscreen
+  BsCheckCircleFill
 } from 'react-icons/bs'
-import { useNavigate } from 'react-router-dom'
 import { sendChatMessage } from '../../services/api'
 
 const QUICK_ACTION_CHIPS = [
@@ -60,7 +58,6 @@ const renderFormattedText = (text) => {
 }
 
 const FloatingChatbot = () => {
-  const navigate = useNavigate()
   const [isOpen, setIsOpen] = useState(false)
   const [inputMessage, setInputMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -260,14 +257,6 @@ const FloatingChatbot = () => {
             </div>
 
             <div className="d-flex align-items-center gap-1">
-              <button
-                type="button"
-                className="btn btn-sm btn-link text-white text-opacity-75 p-1 border-0"
-                onClick={() => navigate('/ai-copilot?tab=chat')}
-                title="Open Fullscreen Page"
-              >
-                <BsArrowsFullscreen size={13} />
-              </button>
               <button
                 type="button"
                 className="btn btn-sm btn-link text-white text-opacity-75 p-1 border-0"
