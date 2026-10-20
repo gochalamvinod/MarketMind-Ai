@@ -1,4 +1,4 @@
-# MarketMind AI — Smart Commodity Price Intelligence & Mandi ERP
+# MarketMind AI — Smart Commodity Price Intelligence & Mandi ERP 
 
 [![Deploy to Render](https://img.shields.io/badge/Deployed%20on-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://marketmind-ai-6ni2.onrender.com)
 [![MongoDB Atlas](https://img.shields.io/badge/Database-MongoDB%20Atlas-47A248?style=for-the-badge&logo=mongodb)](https://www.mongodb.com/atlas)
