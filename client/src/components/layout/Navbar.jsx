@@ -1,13 +1,16 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
+  BsBarChartLineFill,
   BsList,
   BsPersonCircle,
   BsBoxArrowRight,
-  BsShieldCheck
+  BsShieldCheck,
+  BsRobot
 } from 'react-icons/bs'
 import { useAuth } from '../../context/AuthContext'
 import NotificationBell from '../notifications/NotificationBell'
+import { getApiStatus } from '../../services/api'
 
 /**
  * Top navigation bar
@@ -16,7 +19,23 @@ import NotificationBell from '../notifications/NotificationBell'
 const Navbar = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [isDemo, setIsDemo] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+
+  useEffect(() => {
+    // Check if system is in demo or fallback mode
+    const checkStatus = async () => {
+      try {
+        const res = await getApiStatus()
+        if (res.data?.isDemo || res.data?.mode === 'demo' || res.data?.simulated) {
+          setIsDemo(true)
+        }
+      } catch (err) {
+        // Keep default false on error
+      }
+    }
+    checkStatus()
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -46,6 +65,18 @@ const Navbar = ({ onToggleSidebar }) => {
 
         {/* Right: Notifications & User profile */}
         <div className="d-flex align-items-center gap-2 gap-md-3">
+          {user?.role !== 'admin' && (
+            <Link
+              to="/ai-copilot?tab=chat"
+              className="btn btn-outline-success btn-sm rounded-pill d-none d-sm-inline-flex align-items-center gap-1 py-1 px-2 border-opacity-50 text-decoration-none shadow-2xs"
+              title="Open MarketMind AI Copilot"
+              style={{ fontSize: '0.82rem' }}
+            >
+              <BsRobot size={14} />
+              <span className="fw-semibold">AI Copilot</span>
+            </Link>
+          )}
+
           <NotificationBell />
 
           {/* User profile dropdown */}
@@ -57,14 +88,14 @@ const Navbar = ({ onToggleSidebar }) => {
               aria-expanded={userMenuOpen}
             >
               <div className="user-avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold">
-                {user?.name ? user.name.charAt(0).toUpperCase() : <BsPersonCircle className="fs-5" />}
+                {user?.role === 'admin' ? 'A' : user?.name ? user.name.charAt(0).toUpperCase() : <BsPersonCircle className="fs-5" />}
               </div>
               <div className="d-none d-sm-block text-start lh-1 me-1">
                 <span className="d-block fw-semibold text-dark small" style={{ maxWidth: '140px' }}>
-                  {user?.name || 'Store Merchant'}
+                  {user?.role === 'admin' ? 'Administrator' : user?.name || 'User'}
                 </span>
                 <span className="d-block text-muted" style={{ fontSize: '0.72rem' }}>
-                  {user?.businessName || 'Store Owner'}
+                  {user?.role === 'admin' ? 'Master Admin' : user?.businessName || 'Store Owner'}
                 </span>
               </div>
             </button>
@@ -76,14 +107,18 @@ const Navbar = ({ onToggleSidebar }) => {
               >
                 <div className="px-3 py-2 border-bottom">
                   <p className="mb-0 fw-semibold text-dark small">
-                    {user?.name || 'Store Merchant'}
+                    {user?.role === 'admin' ? 'System Administrator' : user?.name || 'Merchant'}
                   </p>
-                  <p className="mb-0 text-muted small text-truncate">{user?.email || 'merchant@marketmind.ai'}</p>
-                  {user?.businessName && (
+                  <p className="mb-0 text-muted small text-truncate">{user?.email || 'admin@marketmind.ai'}</p>
+                  {user?.role === 'admin' ? (
+                    <span className="badge bg-primary-subtle text-primary border border-primary-subtle small mt-1">
+                      Platform Master Admin
+                    </span>
+                  ) : user?.businessName ? (
                     <span className="badge bg-secondary-subtle text-secondary small mt-1">
                       {user.businessName}
                     </span>
-                  )}
+                  ) : null}
                 </div>
 
                 <Link

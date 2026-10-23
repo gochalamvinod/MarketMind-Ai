@@ -1,5 +1,3 @@
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -12,10 +10,12 @@ const { isDemoMode } = require('./utils/helpers');
 
 const app = express();
 
+const initAdminUser = require('./config/initAdmin');
 const { seedMarketPrices } = require('./config/seedMarketPrices');
 
 // Database Connection
 connectDB().then(async () => {
+  await initAdminUser();
   await seedMarketPrices();
 }).catch(() => {});
 
@@ -47,9 +47,12 @@ app.use(async (req, res, next) => {
   if (mongoose.connection.readyState !== 1) {
     try {
       await connectDB();
+      await initAdminUser();
     } catch (err) {
       console.warn('[DB Middleware] Connecting in resilient mode:', err.message);
     }
+  } else {
+    initAdminUser().catch(() => {});
   }
   next();
 });
@@ -76,9 +79,11 @@ app.use('/api/sales', require('./routes/sales'));
 app.use('/api/market-prices', require('./routes/marketPrices'));
 app.use('/api/alerts', require('./routes/alerts'));
 app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/reports', require('./routes/reports'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/chatbot', require('./routes/chatbot'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/admin', require('./routes/admin'));
 
 const path = require('path');
 const fs = require('fs');

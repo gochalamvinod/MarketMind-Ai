@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   BsSpeedometer2,
@@ -6,38 +6,65 @@ import {
   BsCartPlus,
   BsGraphUp,
   BsBell,
+  BsFileText,
   BsGear,
-  BsX
+  BsX,
+  BsDatabase,
+  BsPeopleFill,
+  BsKeyFill,
+  BsShieldCheck
 } from 'react-icons/bs'
+import { useAuth } from '../../context/AuthContext'
+import { getUnreadCount } from '../../services/api'
 
-// Core Navigation items for store merchants
-const navItems = [
+// Navigation items for regular store merchants
+const userNavItems = [
   { name: 'Dashboard', path: '/', icon: BsSpeedometer2 },
   { name: 'Products', path: '/products', icon: BsBox },
   { name: 'Purchases', path: '/purchases', icon: BsCartPlus },
   { name: 'Market Prices', path: '/market-prices', icon: BsGraphUp },
   { name: 'Alerts', path: '/alerts', icon: BsBell },
+  { name: 'Reports', path: '/reports', icon: BsFileText },
+  { name: 'Settings', path: '/settings', icon: BsGear }
+]
+
+// Navigation items for platform admin (manager)
+const adminNavItems = [
+  { name: 'Dashboard', path: '/', icon: BsSpeedometer2 },
+  { name: 'Users', path: '/admin/users', icon: BsPeopleFill },
+  { name: 'Database', path: '/admin/database', icon: BsDatabase },
+  { name: 'API Keys', path: '/admin/api-keys', icon: BsKeyFill },
   { name: 'Settings', path: '/settings', icon: BsGear }
 ]
 
 /**
  * Sidebar navigation component
+ * Shows different nav items based on user role (admin vs merchant)
  * @param {{ mobileOpen?: boolean, onCloseMobile?: () => void }} props
  */
 const Sidebar = ({ mobileOpen, onCloseMobile }) => {
   const location = useLocation()
+  const { user } = useAuth()
+  const [unreadAlerts, setUnreadAlerts] = useState(0)
 
-  // Lock body scroll when mobile off-canvas drawer is active
+  const isAdmin = user?.role === 'admin'
+  const navItems = isAdmin ? adminNavItems : userNavItems
+
   useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
+    // Only poll alerts for non-admin users
+    if (isAdmin) return
+
+    const fetchUnread = async () => {
+      try {
+        const res = await getUnreadCount()
+        const count = res.data?.unreadCount ?? res.data?.count ?? (typeof res.data === 'number' ? res.data : 0)
+        setUnreadAlerts(count)
+      } catch (e) {}
     }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [mobileOpen])
+    fetchUnread()
+    const interval = setInterval(fetchUnread, 30000)
+    return () => clearInterval(interval)
+  }, [location.pathname, isAdmin])
 
   return (
     <>
@@ -55,8 +82,8 @@ const Sidebar = ({ mobileOpen, onCloseMobile }) => {
           mobileOpen ? 'd-flex sidebar-mobile-show' : 'd-none d-lg-flex'
         }`}
       >
-        {/* Mobile Header with prominent close button */}
-        <div className="d-flex align-items-center justify-content-between p-3 border-bottom border-secondary d-lg-none flex-shrink-0">
+        {/* Mobile Header */}
+        <div className="d-flex align-items-center justify-content-between p-3 border-bottom border-secondary d-lg-none">
           <div className="d-flex align-items-center gap-2">
             <img src="/favicon.svg" alt="MarketMind AI" width="28" height="28" className="rounded" />
             <span className="fw-bold fs-5 text-white">MarketMind AI</span>
@@ -76,15 +103,13 @@ const Sidebar = ({ mobileOpen, onCloseMobile }) => {
         </div>
 
         {/* Sidebar Header Brand (Desktop) */}
-        <div className="sidebar-brand-section px-3 py-3 d-none d-lg-block border-bottom border-secondary border-opacity-25 flex-shrink-0">
+        <div className="sidebar-brand-section px-3 py-3 d-none d-lg-block border-bottom border-secondary border-opacity-25">
           <div className="d-flex align-items-center gap-2 mb-1">
             <img src="/favicon.svg" alt="MarketMind AI" width="28" height="28" className="rounded" />
-            <span className="fw-bold fs-6 text-white tracking-tight">
-              MarketMind <span className="badge bg-success-subtle text-success border border-success-subtle" style={{ fontSize: '0.62rem' }}>AI</span>
-            </span>
+            <span className="fw-bold fs-6 text-white tracking-tight">MarketMind <span className="badge bg-success-subtle text-success border border-success-subtle" style={{ fontSize: '0.62rem' }}>AI</span></span>
           </div>
           <div className="small text-uppercase text-light fw-medium tracking-wider" style={{ opacity: 0.65, fontSize: '0.68rem', letterSpacing: '0.08em' }}>
-            Telangana Agri Intelligence
+            {isAdmin ? 'Platform Administration' : 'Telangana Agri Intelligence'}
           </div>
         </div>
 
@@ -111,6 +136,11 @@ const Sidebar = ({ mobileOpen, onCloseMobile }) => {
                   >
                     <Icon className="fs-5 flex-shrink-0" />
                     <span className="nav-text fw-medium">{item.name}</span>
+                    {item.path === '/alerts' && !isAdmin && unreadAlerts > 0 && (
+                      <span className="badge bg-danger rounded-pill ms-auto px-2 py-1" style={{ fontSize: '0.68rem' }}>
+                        {unreadAlerts}
+                      </span>
+                    )}
                   </NavLink>
                 </li>
               )
@@ -119,7 +149,7 @@ const Sidebar = ({ mobileOpen, onCloseMobile }) => {
         </div>
 
         {/* Sidebar Footer info */}
-        <div className="sidebar-footer p-3 border-top border-secondary border-opacity-25 mt-auto flex-shrink-0">
+        <div className="sidebar-footer p-3 border-top border-secondary border-opacity-25 mt-auto">
           <div className="d-flex align-items-center justify-content-between text-secondary small">
             <span>MarketMind v1.0</span>
             <span className="badge bg-success-subtle text-success border border-success-subtle">Online</span>

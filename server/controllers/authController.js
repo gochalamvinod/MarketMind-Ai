@@ -5,9 +5,7 @@ const User = require('../models/User');
 const Settings = require('../models/Settings');
 const fallbackStore = require('../utils/fallbackStore');
 
-const DEFAULT_USER_NAME = process.env.ADMIN_NAME || 'Store Owner';
-const DEFAULT_EMAIL = process.env.ADMIN_EMAIL || 'merchant@marketmind.ai';
-const DEFAULT_BUSINESS_NAME = process.env.DEFAULT_BUSINESS_NAME || 'Store Merchant';
+const JWT_SECRET = 'marketmind_ai_super_secret_jwt_key_telangana_2026';
 
 /**
  * Generate JWT token for authenticated user
@@ -15,7 +13,7 @@ const DEFAULT_BUSINESS_NAME = process.env.DEFAULT_BUSINESS_NAME || 'Store Mercha
  * @returns {string} JWT Token
  */
 const generateToken = (id, role = 'user') => {
-  const secret = process.env.JWT_SECRET || 'marketmind_ai_jwt_secret_telangana_2026';
+  const secret = process.env.JWT_SECRET || JWT_SECRET;
   const expiresIn = process.env.JWT_EXPIRE || '7d';
   return jwt.sign({ id, role }, secret, { expiresIn });
 };
@@ -51,6 +49,7 @@ const register = async (req, res) => {
       });
     }
 
+    // Resilient offline fallback if MongoDB is not connected
     if (mongoose.connection.readyState !== 1) {
       const existingUser = fallbackStore.getUserByEmail(email);
       if (existingUser) {
@@ -66,7 +65,7 @@ const register = async (req, res) => {
         name: name.trim(),
         email: email.toLowerCase().trim(),
         password: hashedPassword,
-        businessName: businessName ? businessName.trim() : DEFAULT_BUSINESS_NAME,
+        businessName: businessName ? businessName.trim() : 'Vinod Traders',
         phone: phone ? phone.trim() : '',
         address: address ? address.trim() : ''
       });
@@ -98,7 +97,7 @@ const register = async (req, res) => {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password: password,
-      businessName: businessName ? businessName.trim() : DEFAULT_BUSINESS_NAME,
+      businessName: businessName ? businessName.trim() : 'Vinod Traders',
       phone: phone ? phone.trim() : '',
       address: address ? address.trim() : ''
     });
@@ -131,12 +130,12 @@ const register = async (req, res) => {
     console.warn('[Register] Database error, saving to resilient fallback store:', error.message);
     try {
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(req.body.password || 'ChangeMe@123', salt);
+      const hashedPassword = await bcrypt.hash(req.body.password || 'Password@123', salt);
       const user = fallbackStore.saveUser({
-        name: (req.body.name || DEFAULT_USER_NAME).trim(),
-        email: (req.body.email || DEFAULT_EMAIL).toLowerCase().trim(),
+        name: (req.body.name || 'Gochalam Vinod').trim(),
+        email: (req.body.email || 'gochalamannavinod@gmail.com').toLowerCase().trim(),
         password: hashedPassword,
-        businessName: (req.body.businessName || DEFAULT_BUSINESS_NAME).trim(),
+        businessName: (req.body.businessName || 'Vinod Traders').trim(),
         phone: req.body.phone || '',
         address: req.body.address || ''
       });
@@ -153,11 +152,11 @@ const register = async (req, res) => {
           address: user.address
         }
       });
-    } catch (innerErr) {
+    } catch (fallbackErr) {
       return res.status(500).json({
         success: false,
-        message: 'Registration service error',
-        error: innerErr.message
+        message: 'Server error during registration',
+        error: error.message
       });
     }
   }
@@ -171,7 +170,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, username, identifier, password } = req.body;
-    const loginIdentifier = (identifier || email || username || '').trim();
+    const loginIdentifier = (identifier || username || email || '').trim();
 
     if (!loginIdentifier || !password) {
       return res.status(400).json({
@@ -180,17 +179,18 @@ const login = async (req, res) => {
       });
     }
 
+    // Resilient offline fallback
     if (mongoose.connection.readyState !== 1) {
-      const user = fallbackStore.getUserByEmail(loginIdentifier) || fallbackStore.getUserByUsername(loginIdentifier);
-      if (user && user.password) {
+      const user = fallbackStore.getUserByEmail(loginIdentifier);
+      if (user) {
         const isMatch = await bcrypt.compare(password, user.password);
         if (isMatch) {
-          const token = generateToken(user._id || user.id, user.role || 'user');
+          const token = generateToken(user._id);
           return res.status(200).json({
             success: true,
             token,
             user: {
-              id: user._id || user.id,
+              id: user._id,
               name: user.name,
               email: user.email,
               businessName: user.businessName,
@@ -201,16 +201,16 @@ const login = async (req, res) => {
         }
       }
 
-      // Resilient local session for fallback operations
+      // Allow login with demo account
       const token = generateToken('6accb03ccb1432144d0291fe');
       return res.status(200).json({
         success: true,
         token,
         user: {
           id: '6accb03ccb1432144d0291fe',
-          name: DEFAULT_USER_NAME,
-          email: loginIdentifier.includes('@') ? loginIdentifier : DEFAULT_EMAIL,
-          businessName: DEFAULT_BUSINESS_NAME
+          name: 'Gochalam Vinod',
+          email: loginIdentifier.includes('@') ? loginIdentifier : 'gochalamannavinod@gmail.com',
+          businessName: 'Vinod Traders'
         }
       });
     }
@@ -255,7 +255,7 @@ const login = async (req, res) => {
         name: user.name,
         email: user.email,
         username: user.username || user.email.split('@')[0],
-        role: user.role || 'user',
+        role: user.role || 'admin',
         businessName: user.businessName,
         phone: user.phone,
         address: user.address
@@ -269,9 +269,9 @@ const login = async (req, res) => {
       token,
       user: {
         id: '6accb03ccb1432144d0291fe',
-        name: DEFAULT_USER_NAME,
-        email: req.body.email || DEFAULT_EMAIL,
-        businessName: DEFAULT_BUSINESS_NAME
+        name: 'Gochalam Vinod',
+        email: req.body.email || 'gochalamannavinod@gmail.com',
+        businessName: 'Vinod Traders'
       }
     });
   }
@@ -290,10 +290,10 @@ const getMe = async (req, res) => {
         success: true,
         user: user || {
           id: req.user.id,
-          name: DEFAULT_USER_NAME,
-          email: DEFAULT_EMAIL,
-          businessName: DEFAULT_BUSINESS_NAME,
-          role: 'user'
+          name: 'Gochalam Vinod',
+          email: 'gochalamannavinod@gmail.com',
+          businessName: 'Vinod Traders',
+          role: 'admin'
         }
       });
     }
@@ -304,10 +304,10 @@ const getMe = async (req, res) => {
         success: true,
         user: {
           id: req.user.id,
-          name: DEFAULT_USER_NAME,
-          email: DEFAULT_EMAIL,
-          businessName: DEFAULT_BUSINESS_NAME,
-          role: 'user'
+          name: 'Gochalam Vinod',
+          email: 'gochalamannavinod@gmail.com',
+          businessName: 'Vinod Traders',
+          role: 'admin'
         }
       });
     }
@@ -319,7 +319,7 @@ const getMe = async (req, res) => {
         name: user.name,
         email: user.email,
         username: user.username || user.email.split('@')[0],
-        role: user.role || 'user',
+        role: user.role || 'admin',
         businessName: user.businessName,
         phone: user.phone,
         address: user.address
@@ -330,10 +330,10 @@ const getMe = async (req, res) => {
       success: true,
       user: {
         id: req.user.id,
-        name: DEFAULT_USER_NAME,
-        email: DEFAULT_EMAIL,
-        businessName: DEFAULT_BUSINESS_NAME,
-        role: 'user'
+        name: 'Gochalam Vinod',
+        email: 'gochalamannavinod@gmail.com',
+        businessName: 'Vinod Traders',
+        role: 'admin'
       }
     });
   }

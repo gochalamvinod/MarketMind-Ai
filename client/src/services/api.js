@@ -103,6 +103,20 @@ export const deleteAlert = (id) => api.delete(`/alerts/${id}`)
 export const getDashboard = () => api.get('/dashboard')
 
 /* ==========================================================================
+   REPORTS API
+   ========================================================================== */
+export const getInventoryReport = (params) => api.get('/reports/inventory', { params })
+export const getPurchaseReport = (params) => api.get('/reports/purchases', { params })
+export const getSalesReport = (params) => api.get('/reports/sales', { params })
+export const getProfitReport = (params) => api.get('/reports/profit', { params })
+export const getPriceHistoryReport = (params) => api.get('/reports/price-history', { params })
+export const exportCsv = (type, params) =>
+  api.get(`/reports/export/${type}`, {
+    params,
+    responseType: 'blob'
+  })
+
+/* ==========================================================================
    AI INSIGHTS & CHATBOT API
    ========================================================================== */
 export const getAIInsights = () => api.get('/ai/insights')
@@ -116,5 +130,17 @@ export const sendChatMessage = (message, history = []) => api.post('/chatbot', {
    ========================================================================== */
 export const getSettings = () => api.get('/settings')
 export const updateSettings = (data) => api.put('/settings', data)
+export const getAdminSystemStatus = () => api.get('/settings/admin-system')
+export const flushCache = () => api.post('/settings/admin-system/flush-cache')
+export const purgeNonAdminData = () => api.post('/settings/admin-system/purge-data')
+
+/* ==========================================================================
+   ADMIN API (Platform Manager)
+   ========================================================================== */
+export const getAdminUsers = () => api.get('/admin/users')
+export const deleteAdminUser = (id) => api.delete(`/admin/users/${id}`)
+export const getAdminDatabase = () => api.get('/admin/database')
+export const getAdminApiKeys = () => api.get('/admin/api-keys')
+export const updateAdminApiKeys = (data) => api.put('/admin/api-keys', data)
 
 export default api

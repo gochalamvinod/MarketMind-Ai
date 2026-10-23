@@ -432,14 +432,9 @@ const Products = () => {
                     return (
                       <tr key={p._id}>
                         <td className="ps-3">
-                          <span
-                            className="fw-semibold text-dark text-primary-hover"
-                            onClick={() => handleOpenEditModal(p)}
-                            style={{ cursor: 'pointer' }}
-                            title="Click to edit product"
-                          >
+                          <Link to={`/products/${p._id}`} className="fw-semibold text-dark text-decoration-none text-primary-hover">
                             {p.name}
-                          </span>
+                          </Link>
                           {p.govApiCommodityName && (
                             <span className="d-block text-muted" style={{ fontSize: '0.75rem' }}>
                               Mandi link: {p.govApiCommodityName}
@@ -467,8 +462,15 @@ const Products = () => {
                         </td>
                         <td className="pe-3 text-end">
                           <div className="btn-group btn-group-sm">
+                            <Link
+                              to={`/products/${p._id}`}
+                              className="btn btn-outline-info"
+                              title="View Details, History & Recommendations"
+                            >
+                              <BsEye />
+                            </Link>
                             <button
-                              className="btn btn-outline-primary"
+                              className="btn btn-outline-secondary"
                               title="Edit Product"
                               onClick={() => handleOpenEditModal(p)}
                             >
