@@ -8,7 +8,9 @@
     "postinstall": "npm install --prefix client && npm run build --prefix client",
     "dev:client": "npm run dev --prefix client",
     "dev:server": "npm run dev --prefix server",
-    "start": "node server/server.js"
+    "start": "node server/server.js",
+    "test": "npm test --prefix server",
+    "test:benchmark": "npm run test:benchmark --prefix server"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",

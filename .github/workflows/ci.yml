@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, fix/hardening-and-accuracy ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'server/package-lock.json'
+
+      - name: Install server dependencies
+        run: npm ci
+        working-directory: server
+
+      - name: Syntax check server files
+        run: |
+          node --check server/server.js
+          node --check server/seed.js
+          node --check server/config/db.js
+          node --check server/config/initAdmin.js
+          node --check server/config/jwtSecret.js
+          node --check server/config/seedMarketPrices.js
+          node --check server/controllers/chatbotController.js
+          node --check server/controllers/authController.js
+          node --check server/middleware/auth.js
+          node --check server/utils/commandParser.js
+          node --check server/utils/fallbackStore.js
+          node --check server/tests/benchmarkCopilot.js
+          node --check server/tests/testAllEndpoints.js
+
+      - name: Run Copilot Benchmark (Database-Free)
+        run: npm run test:benchmark
+        working-directory: server

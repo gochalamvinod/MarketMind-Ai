@@ -305,11 +305,12 @@ MarketMind AI is designed to deploy seamlessly to [Render](https://render.com).
 
 ## 🧪 Deep Verification & Benchmarks
 
-The AI Copilot and execution engine were subjected to a **10,000-prompt deep benchmark harness** across 10 categories:
+The deterministic Copilot command parser was evaluated using a **10,000-prompt benchmark harness** (`server/tests/benchmarkCopilot.js`) across 10 categories:
 - **Total Prompts Tested:** 10,000
-- **Execution Time:** 0.40s (~0.039 ms parsing latency per prompt)
+- **Execution Time:** 0.92s (0.0922 ms mean latency per prompt, 0.3709 ms p95 latency)
 - **Pass Rate:** **10,000 / 10,000 (100.00%)**
-- **Test Categories:** Numeric purchases, APMC market price procurements, direct retail billing, price updates with typos, volatility alerts, compound 3-way sentences, APMC wholesale queries, stock checks, and cash register inquiries.
+- **Test Categories:** Numeric purchases, APMC market price procurements, direct retail billing, price updates with typos, volatility alerts, compound 3-way sentences, APMC wholesale queries, stock checks, catalog listings, and cheap products inquiries.
+- **Detailed Report:** See [docs/BENCHMARK.md](docs/BENCHMARK.md) for full benchmark methodology, honest note on synthetic prompt templates, and category breakdowns.
 
 ---
 
