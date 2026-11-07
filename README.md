@@ -87,11 +87,11 @@ The platform includes a dedicated **Infrastructure & Platform Manager** role:
 | **Frontend UI** | React 18 SPA, Vite 5, React Router DOM v6, Bootstrap 5, Bootstrap Icons |
 | **Data Visualization** | Recharts, Custom CSS Responsive Dashboards |
 | **Backend Runtime** | Node.js (v18+ / v20+ / v22+), Express.js 4 |
-| **Database & ODM** | MongoDB Atlas, Mongoose 8 |
+| **Database & ODM** | MongoDB Atlas, Mongoose 8 (8 models) |
 | **Authentication** | JSON Web Tokens (JWT), bcryptjs |
 | **AI & NLP** | Google Generative AI SDK (`@google/generative-ai`), Gemini 3.5 Flash Lite + NLP Engine |
 | **Data Integration** | AGMARKNET REST API (`data.gov.in`), Axios |
-| **Background Jobs** | node-cron (scheduled periodic mandi price ingestion) |
+| **Background Jobs** | node-cron (scheduled periodic mandi price ingestion: `'0 */6 * * *'`) |
 | **Cloud Hosting** | Render (Unified Web Service with `render.yaml` Blueprint specification) |
 
 ---
@@ -243,6 +243,8 @@ MarketMind AI is designed to deploy seamlessly to [Render](https://render.com).
 
 ## 📡 API Reference
 
+The backend exposes **60 verified Express route handler endpoints** modularized across **13 route files** (verified via `node scripts/count-facts.js`):
+
 ### Authentication
 | Method | Endpoint | Description | Access |
 |---|---|---|---|
@@ -304,6 +306,19 @@ MarketMind AI is designed to deploy seamlessly to [Render](https://render.com).
 ---
 
 ## 🧪 Deep Verification & Benchmarks
+
+### 📊 Codebase Fact-Checking
+The codebase contains a reproducible verification script (`scripts/count-facts.js`) that programmatically inspects the architecture:
+- **Express Route Handlers:** 60 endpoints across 13 route files
+- **Mongoose Data Models:** 8 models (`User`, `Product`, `Supplier`, `Purchase`, `Sale`, `MarketPrice`, `Alert`, `Settings`)
+- **Background Cron Schedule:** `0 */6 * * *` (runs every 6 hours)
+- **Seeded Commodities:** 25 APMC agricultural commodities
+
+To re-run the fact check:
+```bash
+node scripts/count-facts.js
+```
+
 
 The deterministic Copilot command parser was evaluated using a **10,000-prompt benchmark harness** (`server/tests/benchmarkCopilot.js`) across 10 categories:
 - **Total Prompts Tested:** 10,000
