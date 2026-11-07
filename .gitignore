@@ -3,10 +3,12 @@ node_modules/
 client/node_modules/
 server/node_modules/
 
-# Environment variables
+# Environment variables & secrets
 .env
-server/.env
-client/.env
+.env.*
+!.env.example
+*.pem
+*.key
 
 # Build output
 client/dist/
@@ -32,9 +34,5 @@ coverage/
 # Misc
 *.bak
 *.tmp
-*.png
-scripts/
 scratch/
 server/scratch/
-
-

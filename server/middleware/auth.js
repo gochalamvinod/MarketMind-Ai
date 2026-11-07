@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../config/jwtSecret');
 
 /**
  * Authentication middleware to verify JWT in Authorization header
@@ -25,8 +26,7 @@ const auth = async (req, res, next) => {
       });
     }
 
-    const JWT_SECRET = 'marketmind_ai_super_secret_jwt_key_telangana_2026';
-    const secret = process.env.JWT_SECRET || JWT_SECRET;
+    const secret = getJwtSecret();
     const decoded = jwt.verify(token, secret);
 
     // Attach user payload (id, email, role, etc.)

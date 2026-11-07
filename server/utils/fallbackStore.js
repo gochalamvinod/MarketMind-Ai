@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 // In-memory resilient store used when MongoDB is offline/disconnected
 class FallbackStore {
@@ -17,7 +18,8 @@ class FallbackStore {
 
   async initDefaultData() {
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('Vinod@807465', salt);
+    const initialPassword = process.env.ADMIN_PASSWORD || crypto.randomBytes(16).toString('hex');
+    const hashedPassword = await bcrypt.hash(initialPassword, salt);
 
     // Only Admin Account on Launch
     const adminUser = {

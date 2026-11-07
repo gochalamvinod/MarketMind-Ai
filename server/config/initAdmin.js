@@ -13,8 +13,8 @@ let isInitialized = false;
 
 /**
  * Ensure database contains only the requested admin account on launch
+ * Reads ADMIN_PASSWORD from environment.
  * Username: admin
- * Password: Vinod@807465
  * Email: admin@marketmind.ai
  */
 const initAdminUser = async () => {
@@ -22,10 +22,15 @@ const initAdminUser = async () => {
     return;
   }
 
+  const rawPassword = process.env.ADMIN_PASSWORD;
+  if (!rawPassword) {
+    console.warn('[AdminInit] ADMIN_PASSWORD environment variable is not set. Skipping admin initialization / rotation.');
+    return;
+  }
+
   try {
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@marketmind.ai';
     const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-    const rawPassword = process.env.ADMIN_PASSWORD || 'Vinod@807465';
 
     // Check if admin already exists
     let admin = await User.findOne({

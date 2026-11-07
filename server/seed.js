@@ -16,9 +16,16 @@ const Alert = require('./models/Alert');
 const Settings = require('./models/Settings');
 
 const seedDatabase = async () => {
-  const mongoURI =
-    process.env.MONGODB_URI ||
-    'mongodb+srv://vinod:Vinod%40807465@marketmind-ai.gmwcc2v.mongodb.net/marketmind?retryWrites=true&w=majority&appName=MarketMind-Ai';
+  if (!process.env.MONGODB_URI) {
+    console.error('[Seeder] Error: MONGODB_URI environment variable is required.');
+    process.exit(1);
+  }
+  if (!process.env.ADMIN_PASSWORD) {
+    console.error('[Seeder] Error: ADMIN_PASSWORD environment variable is required.');
+    process.exit(1);
+  }
+
+  const mongoURI = process.env.MONGODB_URI;
 
   try {
     console.log('[Seeder] Connecting to MongoDB...');
@@ -44,7 +51,7 @@ const seedDatabase = async () => {
       name: 'Admin',
       email: 'admin@marketmind.ai',
       username: 'admin',
-      password: 'Vinod@807465',
+      password: process.env.ADMIN_PASSWORD,
       role: 'admin',
       businessName: 'Vinod Traders',
       phone: '+91 9876543210',
@@ -68,7 +75,6 @@ const seedDatabase = async () => {
     console.log(' The application contains ONLY the admin account:');
     console.log(' - Username: admin');
     console.log(' - Email:    admin@marketmind.ai');
-    console.log(' - Password: Vinod@807465');
     console.log(' - Products: 0 (Clean Launch)');
     console.log('====================================================');
 

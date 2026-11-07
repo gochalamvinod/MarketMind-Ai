@@ -25,7 +25,7 @@ The platform includes a dedicated **Infrastructure & Platform Manager** role:
 |---|---|
 | **Role** | System Administrator (Manager Console) |
 | **Email** | `admin@marketmind.ai` |
-| **Password** | `Vinod@807465` |
+| **Password** | `<set-in-render-env>` |
 | **Console Access** | User Management, MongoDB Atlas Metrics, API Key Configuration, Cache Management |
 
 > **Note on Role Separation:** The `admin` role is the infrastructure manager, not a retail shopkeeper. To test retail store workflows, sales, purchases, catalog management, and the conversational AI Copilot, register a merchant account via `/register` or sign in with any merchant credentials.
@@ -178,14 +178,14 @@ CLIENT_URL=http://localhost:5173
 MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/marketmind?retryWrites=true&w=majority
 
 # JWT Security
-JWT_SECRET=marketmind_ai_super_secret_jwt_key_telangana_2026
+JWT_SECRET=<set-in-render-env>
 JWT_EXPIRE=7d
 
 # Master Platform Admin Account
 ADMIN_NAME=System Administrator
 ADMIN_USERNAME=admin
 ADMIN_EMAIL=admin@marketmind.ai
-ADMIN_PASSWORD=Vinod@807465
+ADMIN_PASSWORD=<set-in-render-env>
 
 # Google Gemini AI Key
 GEMINI_API_KEY=your_gemini_api_key_here
@@ -232,11 +232,11 @@ MarketMind AI is designed to deploy seamlessly to [Render](https://render.com).
    - **Start Command:** `node server/server.js`
 4. Add environment variables:
    - `NODE_ENV`: `production`
-   - `MONGODB_URI`: `your_mongodb_atlas_connection_string`
-   - `JWT_SECRET`: `your_jwt_secret`
+   - `MONGODB_URI`: `<set-in-render-env>`
+   - `JWT_SECRET`: `<set-in-render-env>`
    - `ADMIN_EMAIL`: `admin@marketmind.ai`
-   - `ADMIN_PASSWORD`: `Vinod@807465`
-   - `GEMINI_API_KEY`: `your_gemini_api_key`
+   - `ADMIN_PASSWORD`: `<set-in-render-env>`
+   - `GEMINI_API_KEY`: `<set-in-render-env>`
 5. Click **Create Web Service**. Express will build and serve the React frontend and the REST API together on your primary Render URL.
 
 ---
@@ -324,3 +324,27 @@ The AI Copilot and execution engine were subjected to a **10,000-prompt deep ben
 
 ## 📜 License
 Distributed under the **MIT License**.
+
+## 🔐 Secrets & Configuration
+
+All secrets and credentials come from environment variables. Never commit actual secret values to source control.
+
+### Required Environment Variables
+- `MONGODB_URI`: MongoDB connection string (e.g. Atlas cluster URI or local `mongodb://localhost:27017/marketmind`).
+- `JWT_SECRET`: Secret key used for signing and verifying JSON Web Tokens.
+- `ADMIN_PASSWORD`: Master administrator password for `admin@marketmind.ai`. Synchronized on server boot.
+- `GEMINI_API_KEY`: Google Gemini API key used for conversational intelligence and predictive market forecasting.
+
+### Optional Environment Variables
+- `GOV_API_KEY`: Government of India AGMARKNET Mandi Price API key (`data.gov.in`).
+- `PORT`: Server port (default: `5000`).
+- `CLIENT_URL`: Allowed frontend origin for CORS.
+
+### Generating a Secure JWT Secret
+Run in terminal (Bash or PowerShell):
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
+---
+

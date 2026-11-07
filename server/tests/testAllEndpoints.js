@@ -22,10 +22,16 @@ async function runAllComponentTests() {
 
   try {
     // 1. AUTH: Login with seeded admin
+    const adminPassword = process.env.TEST_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD;
+    if (!adminPassword) {
+      console.warn('[SKIP] Neither TEST_ADMIN_PASSWORD nor ADMIN_PASSWORD is set in environment. Skipping endpoint tests.');
+      process.exit(0);
+    }
+
     console.log('1. Testing Authentication...');
     const loginRes = await axios.post(`${BASE_URL}/auth/login`, {
       email: 'admin@marketmind.ai',
-      password: 'Vinod@807465'
+      password: adminPassword
     });
     assert(loginRes.status === 200 && loginRes.data.token, 'Login API', `User: ${loginRes.data.user.name}`);
     const token = loginRes.data.token;

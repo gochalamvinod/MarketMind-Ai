@@ -10,14 +10,11 @@ try {
 
 let cachedConnection = null;
 
-// Verified MongoDB Atlas Cluster URI
-const HARDCODED_ATLAS_URI =
-  'mongodb+srv://vinod:Vinod%40807465@marketmind-ai.gmwcc2v.mongodb.net/marketmind?retryWrites=true&w=majority&appName=MarketMind-Ai';
 const LOCAL_URI = 'mongodb://localhost:27017/marketmind';
 
 /**
  * Connect to MongoDB database instance
- * Supports serverless connection caching, hardcoded Atlas credentials, and local fallback
+ * Supports serverless connection caching, environment MongoDB URI, and local fallback
  * @returns {Promise<typeof mongoose|null>} Mongoose connection promise or null on fallback
  */
 const connectDB = async () => {
@@ -29,7 +26,6 @@ const connectDB = async () => {
   if (process.env.MONGODB_URI) {
     urisToAttempt.push(process.env.MONGODB_URI);
   }
-  urisToAttempt.push(HARDCODED_ATLAS_URI);
   urisToAttempt.push(LOCAL_URI);
 
   for (const uri of urisToAttempt) {
@@ -42,7 +38,8 @@ const connectDB = async () => {
       console.log(`[MongoDB] Connected successfully to: ${conn.connection.host}/${conn.connection.name}`);
       return conn;
     } catch (error) {
-      console.warn(`[MongoDB] Connection attempt failed for ${uri.split('@').pop()}: ${error.message}`);
+      const sanitizedTarget = uri.includes('@') ? uri.split('@').pop() : uri.replace(/\/\/[^:]+:[^@]+@/, '//***:***@');
+      console.warn(`[MongoDB] Connection attempt failed for ${sanitizedTarget}: ${error.message}`);
     }
   }
 

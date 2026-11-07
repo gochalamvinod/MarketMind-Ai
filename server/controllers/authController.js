@@ -5,15 +5,14 @@ const User = require('../models/User');
 const Settings = require('../models/Settings');
 const fallbackStore = require('../utils/fallbackStore');
 
-const JWT_SECRET = 'marketmind_ai_super_secret_jwt_key_telangana_2026';
-
+const { getJwtSecret } = require('../config/jwtSecret');
 /**
  * Generate JWT token for authenticated user
  * @param {string} id - User ID
  * @returns {string} JWT Token
  */
 const generateToken = (id, role = 'user') => {
-  const secret = process.env.JWT_SECRET || JWT_SECRET;
+  const secret = getJwtSecret();
   const expiresIn = process.env.JWT_EXPIRE || '7d';
   return jwt.sign({ id, role }, secret, { expiresIn });
 };
